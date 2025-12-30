@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-// Salestics Flame Logo
-const SalesticsLogo = () => (
+// Renexpress Logo
+const RenexpressLogo = () => (
   <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-    <path d="M16 2C16 2 8 10 8 18C8 22.4183 11.5817 26 16 26C20.4183 26 24 22.4183 24 18C24 10 16 2 16 2Z" fill="#FF6B35"/>
-    <path d="M16 8C16 8 12 13 12 17C12 19.2091 13.7909 21 16 21C18.2091 21 20 19.2091 20 17C20 13 16 8 16 8Z" fill="#FFB299"/>
+    <rect width="32" height="32" rx="8" fill="#FF6B35"/>
+    <text x="16" y="22" fontFamily="Arial" fontSize="18" fontWeight="bold" fill="white" textAnchor="middle">R</text>
   </svg>
 );
 
@@ -210,8 +210,8 @@ function Layout({ children, setIsAuthenticated }) {
       <nav style={styles.sidebar}>
         {/* Logo */}
         <div style={styles.logoSection}>
-          <SalesticsLogo />
-          <span style={styles.logoText}>Salestics</span>
+          <RenexpressLogo />
+          <span style={styles.logoText}>Renexpress</span>
         </div>
 
         {/* Navigation */}
@@ -260,7 +260,7 @@ function Layout({ children, setIsAuthenticated }) {
 
         {/* Discover New Features Card */}
         <div style={styles.promoCard}>
-          <SalesticsLogo />
+          <RenexpressLogo />
           <h4 style={styles.promoTitle}>Новые возможности!</h4>
           <p style={styles.promoText}>Откройте новые функции и выведите продажи на новый уровень</p>
           <button style={styles.promoBtn}>Улучшить план</button>
