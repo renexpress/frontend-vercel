@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
@@ -40,8 +41,10 @@ function App() {
   }, []);
 
   return (
-    <Router>
-      <Routes>
+    <>
+      <SpeedInsights />
+      <Router>
+        <Routes>
         <Route
           path="/login"
           element={
@@ -181,8 +184,9 @@ function App() {
           }
         />
         <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} />
-      </Routes>
-    </Router>
+        </Routes>
+      </Router>
+    </>
   );
 }
 
