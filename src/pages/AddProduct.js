@@ -12,6 +12,7 @@ function AddProduct() {
   // Basic product fields
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [characteristics, setCharacteristics] = useState('');
   const [retailPrice, setRetailPrice] = useState('');
   const [wholesalePrice, setWholesalePrice] = useState('');
   const [stockQuantity, setStockQuantity] = useState('');
@@ -237,6 +238,7 @@ function AddProduct() {
       const productData = {
         name,
         description,
+        characteristics,
         retail_price: parseFloat(retailPrice),
         wholesale_price: parseFloat(wholesalePrice),
         category: selectedCategory,
@@ -317,6 +319,19 @@ function AddProduct() {
               style={styles.textarea}
               placeholder="Введите описание товара"
               rows={4}
+            />
+          </div>
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Характеристики</label>
+            <textarea
+              value={characteristics}
+              onChange={(e) => setCharacteristics(e.target.value)}
+              style={styles.textarea}
+              placeholder="Введите каждую характеристику с новой строки, например:
+Серия: NB 530
+Код модели: MR530SG
+Материал: текстиль, кожа"
+              rows={6}
             />
           </div>
         </div>
