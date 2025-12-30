@@ -16,6 +16,7 @@ function ProductDetail() {
   // Edit form state
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [editCharacteristics, setEditCharacteristics] = useState('');
   const [editPrice, setEditPrice] = useState('');
   const [editCategory, setEditCategory] = useState(null);
   const [editAudience, setEditAudience] = useState(null);
@@ -39,6 +40,7 @@ function ProductDetail() {
       setProduct(response.data);
       setEditName(response.data.name);
       setEditDescription(response.data.description || '');
+      setEditCharacteristics(response.data.characteristics || '');
       setEditPrice(response.data.price || '');
       setEditCategory(response.data.category);
       setEditAudience(response.data.audience);
@@ -83,6 +85,7 @@ function ProductDetail() {
       await axios.patch(`${API_URL}/products/${id}/`, {
         name: editName,
         description: editDescription,
+        characteristics: editCharacteristics,
         price: editPrice ? parseFloat(editPrice) : null,
         category: editCategory,
         audience: editAudience,
@@ -321,6 +324,17 @@ function ProductDetail() {
                 </div>
               )}
 
+              {product.characteristics && (
+                <div style={styles.descriptionSection}>
+                  <h3 style={styles.sectionLabel}>Характеристики</h3>
+                  <div style={styles.description}>
+                    {product.characteristics.split('\n').map((line, idx) => (
+                      <p key={idx} style={{ margin: '4px 0' }}>{line}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div style={styles.metaInfo}>
                 <div style={styles.metaItem}>
                   <span style={styles.metaLabel}>ID товара:</span>
@@ -365,6 +379,20 @@ function ProductDetail() {
                     onChange={e => setEditDescription(e.target.value)}
                     style={styles.editTextarea}
                     rows={4}
+                  />
+                </div>
+
+                <div style={styles.editSection}>
+                  <label style={styles.editLabel}>Характеристики</label>
+                  <textarea
+                    value={editCharacteristics}
+                    onChange={e => setEditCharacteristics(e.target.value)}
+                    style={styles.editTextarea}
+                    rows={6}
+                    placeholder="Введите каждую характеристику с новой строки, например:
+Серия: NB 530
+Код модели: MR530SG
+Материал: текстиль, кожа"
                   />
                 </div>
 
