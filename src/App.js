@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
 import AddProduct from './pages/AddProduct';
 import ProductDetail from './pages/ProductDetail';
+import UserProducts from './pages/UserProducts';
 import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
 import Clients from './pages/Clients';
@@ -89,6 +90,14 @@ function App() {
           element={
             <ProtectedRoute isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated}>
               <ProductDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/user-products"
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated}>
+              <UserProducts />
             </ProtectedRoute>
           }
         />
