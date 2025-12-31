@@ -86,12 +86,19 @@ function UserProducts() {
         endpoint = '/products/approved_waiting/';
       } else {
         // All user products
-        endpoint = '/products/?has_owner=true';
+        endpoint = '/products/?is_user_product=true&show_all=true';
       }
 
       const response = await fetch(`${API_URL}${endpoint}`);
       const data = await response.json();
-      setProducts(Array.isArray(data) ? data : []);
+      // Handle both array response and {products: [...]} response
+      if (Array.isArray(data)) {
+        setProducts(data);
+      } else if (data.products && Array.isArray(data.products)) {
+        setProducts(data.products);
+      } else {
+        setProducts([]);
+      }
     } catch (error) {
       console.error('Error fetching products:', error);
       setProducts([]);
