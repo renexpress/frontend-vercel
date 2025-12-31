@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import API_URL from '../config/api';
 
-const WS_URL = 'wss://renatkaraliev.pythonanywhere.com';
-
 // Chat status configuration
 const CHAT_STATUS_CONFIG = {
   open: { label: 'Открыт', color: '#10B981', bg: '#D1FAE5' },
@@ -42,8 +40,6 @@ function Support() {
 
   // Refs
   const messagesEndRef = useRef(null);
-  const wsRef = useRef(null);
-  const adminWsRef = useRef(null);
   const textareaRef = useRef(null);
 
   // Stats
@@ -64,14 +60,11 @@ function Support() {
   // Load chats on mount
   useEffect(() => {
     loadChats();
-    connectAdminWebSocket();
 
     const pollInterval = setInterval(loadChats, 10000);
 
     return () => {
       clearInterval(pollInterval);
-      if (wsRef.current) wsRef.current.close();
-      if (adminWsRef.current) adminWsRef.current.close();
     };
   }, []);
 
@@ -137,78 +130,6 @@ function Support() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const connectAdminWebSocket = () => {
-    try {
-      adminWsRef.current = new WebSocket(`${WS_URL}/ws/admin/support/`);
-
-      adminWsRef.current.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-
-        if (data.type === 'new_message') {
-          loadChats();
-          if (selectedChat && data.client_id === selectedChat.client_id) {
-            setMessages(prev => [...prev, data.message]);
-          }
-          // Play notification sound
-          playNotificationSound();
-        }
-      };
-
-      adminWsRef.current.onerror = (error) => {
-        console.error('Admin WebSocket error:', error);
-      };
-    } catch (error) {
-      console.error('WebSocket connection error:', error);
-    }
-  };
-
-  const connectChatWebSocket = (clientId) => {
-    if (wsRef.current) {
-      wsRef.current.close();
-    }
-
-    try {
-      wsRef.current = new WebSocket(`${WS_URL}/ws/support/${clientId}/`);
-
-      wsRef.current.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-
-        if (data.type === 'history') {
-          setMessages(data.messages || []);
-        } else if (data.type === 'message') {
-          setMessages(prev => [...prev, data.message]);
-        }
-      };
-
-      wsRef.current.onerror = (error) => {
-        console.error('Chat WebSocket error:', error);
-      };
-    } catch (error) {
-      console.error('WebSocket connection error:', error);
-    }
-  };
-
-  const playNotificationSound = () => {
-    // Create audio context for notification
-    try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      oscillator.frequency.value = 800;
-      oscillator.type = 'sine';
-      gainNode.gain.value = 0.1;
-
-      oscillator.start();
-      oscillator.stop(audioContext.currentTime + 0.1);
-    } catch (e) {
-      // Audio not supported
-    }
-  };
-
   const loadChats = async () => {
     try {
       const response = await axios.get(`${API_URL}/support/chats/`);
@@ -235,7 +156,6 @@ function Support() {
 
   const selectChat = async (chat) => {
     setSelectedChat(chat);
-    connectChatWebSocket(chat.client_id);
     loadMessages(chat.client_id);
 
     // Mark messages as read
@@ -267,17 +187,11 @@ function Support() {
       }
 
       if (newMessage.trim()) {
-        const messageData = {
+        await axios.post(`${API_URL}/support/${selectedChat.client_id}/send/`, {
           message: newMessage,
           is_from_client: false
-        };
-
-        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify(messageData));
-        } else {
-          await axios.post(`${API_URL}/support/${selectedChat.client_id}/send/`, messageData);
-          loadMessages(selectedChat.client_id);
-        }
+        });
+        loadMessages(selectedChat.client_id);
       }
 
       setNewMessage('');
