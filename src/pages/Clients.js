@@ -1,92 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import API_URL from '../config/api';
-
-// Icons
-const SearchIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-    <circle cx="11" cy="11" r="8" />
-    <path d="M21 21l-4.35-4.35" />
-  </svg>
-);
-
-const PlusIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <line x1="12" y1="5" x2="12" y2="19" />
-    <line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-);
-
-const UsersIcon = ({ color = "#6366f1" }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-    <circle cx="9" cy="7" r="4" />
-    <path d="M23 21v-2a4 4 0 00-3-3.87" />
-    <path d="M16 3.13a4 4 0 010 7.75" />
-  </svg>
-);
-
-const CheckCircleIcon = ({ color = "#10b981" }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
-    <polyline points="22,4 12,14.01 9,11.01" />
-  </svg>
-);
-
-const BuildingIcon = ({ color = "#f59e0b" }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M6 22V4a2 2 0 012-2h8a2 2 0 012 2v18" />
-    <path d="M6 12H4a2 2 0 00-2 2v6a2 2 0 002 2h2" />
-    <path d="M18 9h2a2 2 0 012 2v9a2 2 0 01-2 2h-2" />
-    <path d="M10 6h4" />
-    <path d="M10 10h4" />
-    <path d="M10 14h4" />
-    <path d="M10 18h4" />
-  </svg>
-);
-
-const ShoppingBagIcon = ({ color = "#8b5cf6" }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
-    <line x1="3" y1="6" x2="21" y2="6" />
-    <path d="M16 10a4 4 0 01-8 0" />
-  </svg>
-);
-
-const PhoneIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
-  </svg>
-);
-
-const MailIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-    <polyline points="22,6 12,13 2,6" />
-  </svg>
-);
-
-const MapPinIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
-    <circle cx="12" cy="10" r="3" />
-  </svg>
-);
-
-const ChevronRightIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-    <polyline points="9,18 15,12 9,6" />
-  </svg>
-);
-
-const XCircleIcon = ({ color = "#ef4444" }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <circle cx="12" cy="12" r="10" />
-    <line x1="15" y1="9" x2="9" y2="15" />
-    <line x1="9" y1="9" x2="15" y2="15" />
-  </svg>
-);
 
 function Clients() {
   const navigate = useNavigate();
@@ -94,23 +9,42 @@ function Clients() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filter, setFilter] = useState('all');
-  const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0, companies: 0 });
+  const [activeTab, setActiveTab] = useState('all');
+  const [showSort, setShowSort] = useState(false);
+  const [sortBy, setSortBy] = useState('created_desc');
+  const [hoveredRow, setHoveredRow] = useState(null);
+  const [hoveredBtn, setHoveredBtn] = useState(null);
+  const sortRef = useRef(null);
+
+  const tabs = [
+    { id: 'all', label: 'Все' },
+    { id: 'active', label: 'Активные' },
+    { id: 'inactive', label: 'Неактивные' },
+    { id: 'companies', label: 'Компании' },
+  ];
+
+  const sortOptions = [
+    { id: 'created_desc', label: 'Сначала новые' },
+    { id: 'created_asc', label: 'Сначала старые' },
+    { id: 'name_asc', label: 'Имя А-Я' },
+    { id: 'name_desc', label: 'Имя Я-А' },
+    { id: 'orders_desc', label: 'Больше заказов' },
+    { id: 'orders_asc', label: 'Меньше заказов' },
+  ];
 
   useEffect(() => {
     fetchData();
   }, []);
 
   useEffect(() => {
-    if (clients.length > 0) {
-      setStats({
-        total: clients.length,
-        active: clients.filter(c => c.is_active).length,
-        inactive: clients.filter(c => !c.is_active).length,
-        companies: clients.filter(c => c.company_name).length
-      });
-    }
-  }, [clients]);
+    const handleClickOutside = (event) => {
+      if (sortRef.current && !sortRef.current.contains(event.target)) {
+        setShowSort(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const fetchData = async () => {
     try {
@@ -131,168 +65,196 @@ function Clients() {
     return orders.filter(o => o.client === clientId).length;
   };
 
-  const filteredClients = clients.filter(client => {
-    const matchesSearch =
-      client.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.phone.includes(searchTerm) ||
-      client.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (client.company_name && client.company_name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const getTabCount = (tabId) => {
+    switch (tabId) {
+      case 'all': return clients.length;
+      case 'active': return clients.filter(c => c.is_active).length;
+      case 'inactive': return clients.filter(c => !c.is_active).length;
+      case 'companies': return clients.filter(c => c.company_name).length;
+      default: return 0;
+    }
+  };
 
-    if (filter === 'active') return matchesSearch && client.is_active;
-    if (filter === 'inactive') return matchesSearch && !client.is_active;
-    if (filter === 'companies') return matchesSearch && client.company_name;
-    return matchesSearch;
-  });
+  const filteredClients = clients
+    .filter(client => {
+      const matchesSearch =
+        (client.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (client.phone || '').includes(searchTerm) ||
+        (client.username || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (client.company_name && client.company_name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+      if (activeTab === 'active') return matchesSearch && client.is_active;
+      if (activeTab === 'inactive') return matchesSearch && !client.is_active;
+      if (activeTab === 'companies') return matchesSearch && client.company_name;
+      return matchesSearch;
+    })
+    .sort((a, b) => {
+      const aOrders = getClientOrderCount(a.id);
+      const bOrders = getClientOrderCount(b.id);
+      switch (sortBy) {
+        case 'created_asc': return new Date(a.created_at) - new Date(b.created_at);
+        case 'created_desc': return new Date(b.created_at) - new Date(a.created_at);
+        case 'name_asc': return (a.full_name || '').localeCompare(b.full_name || '');
+        case 'name_desc': return (b.full_name || '').localeCompare(a.full_name || '');
+        case 'orders_desc': return bOrders - aOrders;
+        case 'orders_asc': return aOrders - bOrders;
+        default: return 0;
+      }
+    });
 
   const getInitials = (name) => {
+    if (!name) return '?';
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  const getAvatarGradient = (id) => {
-    const gradients = [
-      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-      'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-      'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-      'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-      'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-      'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-    ];
-    return gradients[id % gradients.length];
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '—';
+    return new Date(dateStr).toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
   };
 
   if (loading) {
     return (
-      <div style={styles.loadingContainer}>
-        <div style={styles.loadingSpinner}></div>
-        <p style={styles.loadingText}>Загрузка данных...</p>
+      <div style={styles.page}>
+        <div style={styles.loading}>
+          <div style={styles.spinner}></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
+    <div style={styles.page}>
       {/* Header */}
       <div style={styles.header}>
-        <div>
-          <h1 style={styles.title}>Клиенты</h1>
-          <p style={styles.subtitle}>Управление клиентской базой</p>
-        </div>
+        <h1 style={styles.title}>Клиенты</h1>
         <button
+          style={{
+            ...styles.addBtn,
+            backgroundColor: hoveredBtn === 'add' ? '#1a1a1a' : '#303030',
+            transform: hoveredBtn === 'add' ? 'translateY(-1px)' : 'none',
+          }}
           onClick={() => navigate('/clients/add')}
-          style={styles.addButton}
-          onMouseEnter={(e) => e.target.style.transform = 'translateY(-2px)'}
-          onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
+          onMouseEnter={() => setHoveredBtn('add')}
+          onMouseLeave={() => setHoveredBtn(null)}
         >
-          <PlusIcon />
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="#fff">
+            <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"/>
+          </svg>
           Добавить клиента
         </button>
       </div>
 
-      {/* Stats Bar - Horizontal like in the design */}
-      <div style={styles.statsBar}>
-        <div style={styles.statItem}>
-          <div style={{...styles.statIconBox, backgroundColor: '#eef2ff'}}>
-            <UsersIcon color="#6366f1" />
-          </div>
-          <div style={styles.statContent}>
-            <span style={styles.statNumber}>{stats.total}</span>
-            <span style={styles.statLabel}>Всего клиентов</span>
-          </div>
-        </div>
-
-        <div style={styles.statDivider} />
-
-        <div style={styles.statItem}>
-          <div style={{...styles.statIconBox, backgroundColor: '#ecfdf5'}}>
-            <CheckCircleIcon color="#10b981" />
-          </div>
-          <div style={styles.statContent}>
-            <span style={styles.statNumber}>{stats.active}</span>
-            <span style={styles.statLabel}>Активных</span>
-          </div>
-        </div>
-
-        <div style={styles.statDivider} />
-
-        <div style={styles.statItem}>
-          <div style={{...styles.statIconBox, backgroundColor: '#fef2f2'}}>
-            <XCircleIcon color="#ef4444" />
-          </div>
-          <div style={styles.statContent}>
-            <span style={styles.statNumber}>{stats.inactive}</span>
-            <span style={styles.statLabel}>Неактивных</span>
-          </div>
-        </div>
-
-        <div style={styles.statDivider} />
-
-        <div style={styles.statItem}>
-          <div style={{...styles.statIconBox, backgroundColor: '#fffbeb'}}>
-            <BuildingIcon color="#f59e0b" />
-          </div>
-          <div style={styles.statContent}>
-            <span style={styles.statNumber}>{stats.companies}</span>
-            <span style={styles.statLabel}>С компанией</span>
-          </div>
-        </div>
+      {/* Tabs */}
+      <div style={styles.tabsRow}>
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={{
+              ...styles.tab,
+              borderBottomColor: activeTab === tab.id ? '#303030' : 'transparent',
+              color: activeTab === tab.id ? '#303030' : '#6d7175',
+              fontWeight: activeTab === tab.id ? '600' : '500',
+            }}
+          >
+            {tab.label}
+            <span style={{
+              ...styles.tabCount,
+              backgroundColor: activeTab === tab.id ? '#303030' : '#e4e5e7',
+              color: activeTab === tab.id ? '#fff' : '#6d7175',
+            }}>
+              {getTabCount(tab.id)}
+            </span>
+          </button>
+        ))}
       </div>
 
-      {/* Search and Filters */}
-      <div style={styles.filtersCard}>
+      {/* Search & Filters Panel */}
+      <div style={styles.filtersPanel}>
         <div style={styles.searchBox}>
-          <SearchIcon />
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="#8c9196">
+            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"/>
+          </svg>
           <input
             type="text"
-            placeholder="Поиск по имени, телефону, логину или компании..."
+            placeholder="Поиск по имени, телефону, логину..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={styles.searchInput}
           />
-        </div>
-        <div style={styles.filterButtons}>
-          {[
-            { key: 'all', label: 'Все', count: stats.total },
-            { key: 'active', label: 'Активные', count: stats.active },
-            { key: 'inactive', label: 'Неактивные', count: stats.inactive },
-            { key: 'companies', label: 'Компании', count: stats.companies }
-          ].map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              style={{
-                ...styles.filterBtn,
-                ...(filter === f.key ? styles.filterBtnActive : {})
-              }}
-            >
-              {f.label}
-              <span style={{
-                ...styles.filterCount,
-                backgroundColor: filter === f.key ? '#6366f1' : '#e5e7eb',
-                color: filter === f.key ? 'white' : '#6b7280'
-              }}>
-                {f.count}
-              </span>
+          {searchTerm && (
+            <button style={styles.clearSearch} onClick={() => setSearchTerm('')}>
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="#8c9196">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
+              </svg>
             </button>
-          ))}
+          )}
+        </div>
+
+        <div style={styles.filterActions}>
+          {/* Sort Dropdown */}
+          <div style={styles.sortWrapper} ref={sortRef}>
+            <button
+              style={{
+                ...styles.sortBtn,
+                backgroundColor: hoveredBtn === 'sort' || showSort ? '#f6f6f7' : '#fff',
+              }}
+              onClick={() => setShowSort(!showSort)}
+              onMouseEnter={() => setHoveredBtn('sort')}
+              onMouseLeave={() => setHoveredBtn(null)}
+            >
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="#5c5f62">
+                <path d="M3 3a1 1 0 000 2h11a1 1 0 100-2H3zm0 4a1 1 0 000 2h7a1 1 0 100-2H3zm0 4a1 1 0 100 2h4a1 1 0 100-2H3z"/>
+              </svg>
+              <span>{sortOptions.find(s => s.id === sortBy)?.label}</span>
+              <svg width="12" height="12" viewBox="0 0 20 20" fill="#5c5f62">
+                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd"/>
+              </svg>
+            </button>
+            {showSort && (
+              <div style={styles.sortDropdown}>
+                {sortOptions.map(option => (
+                  <div
+                    key={option.id}
+                    style={{
+                      ...styles.sortOption,
+                      backgroundColor: sortBy === option.id ? '#f6f6f7' : 'transparent',
+                    }}
+                    onClick={() => { setSortBy(option.id); setShowSort(false); }}
+                  >
+                    {option.label}
+                    {sortBy === option.id && (
+                      <svg width="16" height="16" viewBox="0 0 20 20" fill="#303030">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                      </svg>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Clients Table */}
-      <div style={styles.tableCard}>
-        <div style={styles.tableHeader}>
-          <h3 style={styles.tableTitle}>Список клиентов</h3>
-          <span style={styles.resultCount}>
-            Показано {filteredClients.length} из {clients.length}
-          </span>
-        </div>
+      {/* Results count */}
+      <div style={styles.resultsRow}>
+        <span style={styles.resultsText}>
+          {filteredClients.length} {filteredClients.length === 1 ? 'клиент' : 'клиентов'}
+        </span>
+      </div>
 
+      {/* Table */}
+      <div style={styles.tableCard}>
         {filteredClients.length === 0 ? (
           <div style={styles.emptyState}>
-            <div style={styles.emptyIcon}>
-              <UsersIcon color="#9ca3af" />
-            </div>
-            <p style={styles.emptyTitle}>Клиенты не найдены</p>
+            <svg width="48" height="48" viewBox="0 0 20 20" fill="#c9cccf">
+              <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/>
+            </svg>
+            <h3 style={styles.emptyTitle}>Клиенты не найдены</h3>
             <p style={styles.emptyText}>Попробуйте изменить параметры поиска</p>
           </div>
         ) : (
@@ -305,98 +267,100 @@ function Clients() {
                 <th style={styles.th}>Город</th>
                 <th style={{...styles.th, textAlign: 'center'}}>Заказов</th>
                 <th style={{...styles.th, textAlign: 'center'}}>Статус</th>
-                <th style={{...styles.th, width: '40px'}}></th>
+                <th style={styles.th}>Дата регистрации</th>
               </tr>
             </thead>
             <tbody>
-              {filteredClients.map((client) => (
-                <tr
-                  key={client.id}
-                  onClick={() => navigate(`/clients/${client.id}`)}
-                  style={styles.tr}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f9fafb';
-                    e.currentTarget.querySelector('.chevron').style.opacity = '1';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                    e.currentTarget.querySelector('.chevron').style.opacity = '0';
-                  }}
-                >
-                  <td style={styles.td}>
-                    <div style={styles.clientCell}>
-                      <div style={{
-                        ...styles.avatar,
-                        background: getAvatarGradient(client.id)
-                      }}>
-                        {getInitials(client.full_name)}
-                      </div>
-                      <div style={styles.clientInfo}>
-                        <span style={styles.clientName}>{client.full_name}</span>
-                        <span style={styles.usernameBadge}>{client.username}</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td style={styles.td}>
-                    <div style={styles.contactInfo}>
-                      <div style={styles.contactRow}>
-                        <PhoneIcon />
-                        <span>{client.phone}</span>
-                      </div>
-                      {client.email && (
-                        <div style={styles.contactRow}>
-                          <MailIcon />
-                          <span style={styles.emailText}>{client.email}</span>
+              {filteredClients.map((client) => {
+                const orderCount = getClientOrderCount(client.id);
+                return (
+                  <tr
+                    key={client.id}
+                    onClick={() => navigate(`/clients/${client.id}`)}
+                    style={{
+                      ...styles.tr,
+                      backgroundColor: hoveredRow === client.id ? '#f6f6f7' : 'transparent',
+                    }}
+                    onMouseEnter={() => setHoveredRow(client.id)}
+                    onMouseLeave={() => setHoveredRow(null)}
+                  >
+                    <td style={styles.td}>
+                      <div style={styles.clientCell}>
+                        <div style={styles.avatar}>
+                          {getInitials(client.full_name)}
                         </div>
+                        <div style={styles.clientInfo}>
+                          <span style={styles.clientName}>{client.full_name || '—'}</span>
+                          <span style={styles.username}>{client.username}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td style={styles.td}>
+                      <div style={styles.contactInfo}>
+                        <div style={styles.contactRow}>
+                          <svg width="14" height="14" viewBox="0 0 20 20" fill="#8c9196">
+                            <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
+                          </svg>
+                          <span>{client.phone}</span>
+                        </div>
+                        {client.email && (
+                          <div style={styles.contactRow}>
+                            <svg width="14" height="14" viewBox="0 0 20 20" fill="#8c9196">
+                              <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
+                              <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+                            </svg>
+                            <span style={styles.emailText}>{client.email}</span>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td style={styles.td}>
+                      {client.company_name ? (
+                        <span style={styles.companyBadge}>{client.company_name}</span>
+                      ) : (
+                        <span style={styles.noData}>—</span>
                       )}
-                    </div>
-                  </td>
-                  <td style={styles.td}>
-                    {client.company_name ? (
-                      <div style={styles.companyBadge}>
-                        <BuildingIcon color="#f59e0b" />
-                        <span>{client.company_name}</span>
-                      </div>
-                    ) : (
-                      <span style={styles.noData}>—</span>
-                    )}
-                  </td>
-                  <td style={styles.td}>
-                    {client.city ? (
-                      <div style={styles.cityBadge}>
-                        <MapPinIcon />
-                        <span>{client.city}</span>
-                      </div>
-                    ) : (
-                      <span style={styles.noData}>—</span>
-                    )}
-                  </td>
-                  <td style={{...styles.td, textAlign: 'center'}}>
-                    <div style={styles.ordersBadge}>
-                      <ShoppingBagIcon color="#8b5cf6" />
-                      <span>{getClientOrderCount(client.id)}</span>
-                    </div>
-                  </td>
-                  <td style={{...styles.td, textAlign: 'center'}}>
-                    <span style={{
-                      ...styles.statusBadge,
-                      backgroundColor: client.is_active ? '#ecfdf5' : '#fef2f2',
-                      color: client.is_active ? '#059669' : '#dc2626'
-                    }}>
+                    </td>
+                    <td style={styles.td}>
+                      {client.city ? (
+                        <div style={styles.cityCell}>
+                          <svg width="14" height="14" viewBox="0 0 20 20" fill="#8c9196">
+                            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/>
+                          </svg>
+                          <span>{client.city}</span>
+                        </div>
+                      ) : (
+                        <span style={styles.noData}>—</span>
+                      )}
+                    </td>
+                    <td style={{...styles.td, textAlign: 'center'}}>
                       <span style={{
-                        ...styles.statusDot,
-                        backgroundColor: client.is_active ? '#10b981' : '#ef4444'
-                      }} />
-                      {client.is_active ? 'Активен' : 'Неактивен'}
-                    </span>
-                  </td>
-                  <td style={styles.td}>
-                    <span className="chevron" style={styles.chevron}>
-                      <ChevronRightIcon />
-                    </span>
-                  </td>
-                </tr>
-              ))}
+                        ...styles.ordersBadge,
+                        backgroundColor: orderCount > 0 ? '#e3f4e8' : '#f6f6f7',
+                        color: orderCount > 0 ? '#1a7f37' : '#6d7175',
+                      }}>
+                        {orderCount}
+                      </span>
+                    </td>
+                    <td style={{...styles.td, textAlign: 'center'}}>
+                      <span style={{
+                        ...styles.statusBadge,
+                        backgroundColor: client.is_active ? '#e3f4e8' : '#fef2f2',
+                        color: client.is_active ? '#1a7f37' : '#d72c0d',
+                      }}>
+                        <span style={{
+                          ...styles.statusDot,
+                          backgroundColor: client.is_active ? '#1a7f37' : '#d72c0d',
+                        }}/>
+                        {client.is_active ? 'Активен' : 'Неактивен'}
+                      </span>
+                    </td>
+                    <td style={styles.td}>
+                      <span style={styles.dateText}>{formatDate(client.created_at)}</span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -406,354 +370,323 @@ function Clients() {
 }
 
 const styles = {
-  container: {
-    padding: '32px 40px',
-    maxWidth: '1400px',
+  page: {
+    padding: '16px 20px',
     minHeight: '100vh',
-    backgroundColor: '#f8fafc',
   },
-  loadingContainer: {
+  loading: {
     display: 'flex',
-    flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
-    height: '100vh',
-    backgroundColor: '#f8fafc',
+    height: '300px',
   },
-  loadingSpinner: {
-    width: '48px',
-    height: '48px',
-    border: '3px solid #e5e7eb',
-    borderTopColor: '#6366f1',
+  spinner: {
+    width: '40px',
+    height: '40px',
+    border: '4px solid #e3e3e3',
+    borderTopColor: '#303030',
     borderRadius: '50%',
     animation: 'spin 1s linear infinite',
   },
-  loadingText: {
-    marginTop: '16px',
-    fontSize: '14px',
-    color: '#6b7280',
-  },
+
+  // Header
   header: {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: '24px',
+    alignItems: 'center',
+    marginBottom: '20px',
   },
   title: {
-    fontSize: '28px',
-    fontWeight: '700',
-    color: '#1e293b',
+    fontSize: '20px',
+    fontWeight: '600',
+    color: '#303030',
     margin: 0,
   },
-  subtitle: {
-    fontSize: '14px',
-    color: '#64748b',
-    marginTop: '4px',
+  addBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '8px 14px',
+    backgroundColor: '#303030',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '13px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    boxShadow: '0 1px 0 rgba(0,0,0,0.05), inset 0 -1px 0 rgba(0,0,0,0.2)',
+    transition: 'all 0.15s',
   },
-  addButton: {
+
+  // Tabs
+  tabsRow: {
+    display: 'flex',
+    gap: '0',
+    borderBottom: '1px solid #e1e3e5',
+    marginBottom: '16px',
+  },
+  tab: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    padding: '12px 24px',
-    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-    color: 'white',
+    padding: '12px 16px',
     border: 'none',
-    borderRadius: '12px',
-    fontSize: '14px',
-    fontWeight: '600',
+    borderBottom: '2px solid transparent',
+    background: 'none',
+    fontSize: '13px',
     cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
+    transition: 'all 0.15s',
+    marginBottom: '-1px',
+  },
+  tabCount: {
+    padding: '2px 8px',
+    borderRadius: '10px',
+    fontSize: '11px',
+    fontWeight: '600',
   },
 
-  // Stats Bar - Horizontal
-  statsBar: {
-    display: 'flex',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: '16px',
-    padding: '20px 32px',
-    marginBottom: '24px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-    border: '1px solid #e2e8f0',
-  },
-  statItem: {
+  // Filters Panel
+  filtersPanel: {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    flex: 1,
-  },
-  statIconBox: {
-    width: '44px',
-    height: '44px',
-    borderRadius: '12px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statContent: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  statNumber: {
-    fontSize: '24px',
-    fontWeight: '700',
-    color: '#1e293b',
-    lineHeight: 1,
-  },
-  statLabel: {
-    fontSize: '13px',
-    color: '#64748b',
-    marginTop: '4px',
-  },
-  statDivider: {
-    width: '1px',
-    height: '40px',
-    backgroundColor: '#e2e8f0',
-    margin: '0 24px',
-  },
-
-  // Filters
-  filtersCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: '16px',
-    padding: '16px 24px',
-    marginBottom: '24px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-    border: '1px solid #e2e8f0',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '20px',
+    marginBottom: '12px',
   },
   searchBox: {
     flex: 1,
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    backgroundColor: '#f8fafc',
-    borderRadius: '12px',
-    padding: '12px 16px',
-    border: '1px solid #e2e8f0',
-    transition: 'border-color 0.2s ease',
+    gap: '8px',
+    padding: '8px 12px',
+    backgroundColor: '#fff',
+    border: '1px solid #c9cccf',
+    borderRadius: '8px',
+    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
   },
   searchInput: {
     flex: 1,
     border: 'none',
     background: 'none',
-    fontSize: '14px',
-    color: '#1e293b',
+    fontSize: '13px',
+    color: '#303030',
     outline: 'none',
   },
-  filterButtons: {
-    display: 'flex',
-    gap: '8px',
-  },
-  filterBtn: {
+  clearSearch: {
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    padding: '2px',
     display: 'flex',
     alignItems: 'center',
+  },
+  filterActions: {
+    display: 'flex',
     gap: '8px',
-    padding: '10px 16px',
-    border: 'none',
-    borderRadius: '10px',
+  },
+  sortWrapper: {
+    position: 'relative',
+  },
+  sortBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '8px 12px',
+    backgroundColor: '#fff',
+    border: '1px solid #c9cccf',
+    borderRadius: '8px',
     fontSize: '13px',
-    fontWeight: '500',
+    color: '#303030',
     cursor: 'pointer',
-    backgroundColor: '#f8fafc',
-    color: '#64748b',
-    transition: 'all 0.2s ease',
+    boxShadow: '0 1px 0 rgba(0,0,0,0.05), inset 0 -1px 0 rgba(0,0,0,0.1)',
+    transition: 'all 0.15s',
   },
-  filterBtnActive: {
-    backgroundColor: '#eef2ff',
-    color: '#6366f1',
+  sortDropdown: {
+    position: 'absolute',
+    top: 'calc(100% + 4px)',
+    right: 0,
+    backgroundColor: '#fff',
+    border: '1px solid #e1e3e5',
+    borderRadius: '10px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    minWidth: '180px',
+    zIndex: 100,
+    overflow: 'hidden',
   },
-  filterCount: {
-    padding: '2px 8px',
-    borderRadius: '6px',
-    fontSize: '11px',
-    fontWeight: '600',
+  sortOption: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '10px 14px',
+    fontSize: '13px',
+    color: '#303030',
+    cursor: 'pointer',
+    transition: 'background-color 0.1s',
+  },
+
+  // Results
+  resultsRow: {
+    marginBottom: '12px',
+  },
+  resultsText: {
+    fontSize: '13px',
+    color: '#6d7175',
   },
 
   // Table
   tableCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: '16px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-    border: '1px solid #e2e8f0',
+    backgroundColor: '#fff',
+    borderRadius: '12px',
+    border: '1px solid #e1e3e5',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
     overflow: 'hidden',
-  },
-  tableHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '20px 24px',
-    borderBottom: '1px solid #e2e8f0',
-  },
-  tableTitle: {
-    fontSize: '16px',
-    fontWeight: '600',
-    color: '#1e293b',
-    margin: 0,
-  },
-  resultCount: {
-    fontSize: '13px',
-    color: '#64748b',
   },
   table: {
     width: '100%',
     borderCollapse: 'collapse',
   },
   th: {
-    padding: '14px 24px',
+    padding: '12px 16px',
     textAlign: 'left',
     fontSize: '12px',
     fontWeight: '600',
-    color: '#64748b',
+    color: '#6d7175',
+    backgroundColor: '#f6f6f7',
+    borderBottom: '1px solid #e1e3e5',
     textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-    backgroundColor: '#f8fafc',
-    borderBottom: '1px solid #e2e8f0',
+    letterSpacing: '0.3px',
   },
   tr: {
     cursor: 'pointer',
-    transition: 'background-color 0.15s ease',
-    borderBottom: '1px solid #f1f5f9',
+    transition: 'background-color 0.1s',
+    borderBottom: '1px solid #f1f1f1',
   },
   td: {
-    padding: '16px 24px',
-    fontSize: '14px',
-    color: '#475569',
+    padding: '14px 16px',
+    fontSize: '13px',
+    color: '#303030',
+    verticalAlign: 'middle',
   },
+
+  // Client Cell
   clientCell: {
     display: 'flex',
     alignItems: 'center',
-    gap: '14px',
+    gap: '12px',
   },
   avatar: {
-    width: '44px',
-    height: '44px',
-    borderRadius: '12px',
+    width: '40px',
+    height: '40px',
+    borderRadius: '10px',
+    backgroundColor: '#f6f6f7',
+    border: '1px solid #e1e3e5',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '14px',
+    fontSize: '13px',
     fontWeight: '600',
-    color: 'white',
+    color: '#6d7175',
     flexShrink: 0,
   },
   clientInfo: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '4px',
+    gap: '2px',
   },
   clientName: {
-    fontWeight: '600',
-    color: '#1e293b',
     fontSize: '14px',
-  },
-  usernameBadge: {
-    display: 'inline-block',
-    padding: '3px 8px',
-    backgroundColor: '#f1f5f9',
-    color: '#6366f1',
-    borderRadius: '6px',
-    fontSize: '12px',
     fontWeight: '600',
-    width: 'fit-content',
+    color: '#303030',
   },
+  username: {
+    fontSize: '12px',
+    color: '#8c9196',
+    fontFamily: 'monospace',
+  },
+
+  // Contact Info
   contactInfo: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '6px',
+    gap: '4px',
   },
   contactRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: '6px',
     fontSize: '13px',
-    color: '#475569',
+    color: '#303030',
   },
   emailText: {
-    color: '#64748b',
+    color: '#6d7175',
     fontSize: '12px',
   },
+
+  // Badges
   companyBadge: {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '6px',
-    padding: '6px 12px',
-    backgroundColor: '#fffbeb',
-    borderRadius: '8px',
-    fontSize: '13px',
-    color: '#b45309',
+    padding: '4px 10px',
+    backgroundColor: '#fff8e6',
+    border: '1px solid #f0d78c',
+    borderRadius: '6px',
+    fontSize: '12px',
     fontWeight: '500',
+    color: '#b88c1a',
   },
-  cityBadge: {
-    display: 'inline-flex',
+  cityCell: {
+    display: 'flex',
     alignItems: 'center',
     gap: '6px',
     fontSize: '13px',
-    color: '#64748b',
+    color: '#6d7175',
   },
   ordersBadge: {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '6px',
-    padding: '6px 12px',
-    backgroundColor: '#f5f3ff',
-    borderRadius: '8px',
+    padding: '4px 12px',
+    borderRadius: '6px',
     fontSize: '13px',
-    color: '#7c3aed',
     fontWeight: '600',
+    minWidth: '32px',
   },
   statusBadge: {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '6px',
-    padding: '6px 14px',
-    borderRadius: '20px',
+    padding: '4px 10px',
+    borderRadius: '6px',
     fontSize: '12px',
-    fontWeight: '600',
+    fontWeight: '500',
   },
   statusDot: {
     width: '6px',
     height: '6px',
     borderRadius: '50%',
   },
+  dateText: {
+    fontSize: '12px',
+    color: '#6d7175',
+  },
   noData: {
-    color: '#cbd5e1',
-    fontSize: '14px',
+    color: '#c9cccf',
   },
-  chevron: {
-    opacity: 0,
-    transition: 'opacity 0.15s ease',
-    display: 'flex',
-    alignItems: 'center',
-  },
+
+  // Empty State
   emptyState: {
-    padding: '80px 40px',
+    padding: '60px 20px',
     textAlign: 'center',
   },
-  emptyIcon: {
-    width: '64px',
-    height: '64px',
-    borderRadius: '16px',
-    backgroundColor: '#f1f5f9',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin: '0 auto 16px',
-  },
   emptyTitle: {
-    fontSize: '16px',
+    margin: '16px 0 8px 0',
+    fontSize: '15px',
     fontWeight: '600',
-    color: '#475569',
-    margin: '0 0 8px 0',
+    color: '#303030',
   },
   emptyText: {
-    fontSize: '14px',
-    color: '#94a3b8',
     margin: 0,
+    fontSize: '13px',
+    color: '#6d7175',
   },
 };
 

@@ -1,1207 +1,729 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import API_URL from '../config/api';
 
-// Icons
-const SearchIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2">
-    <circle cx="11" cy="11" r="8" />
-    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-  </svg>
-);
-
-const CloseIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <line x1="18" y1="6" x2="6" y2="18" />
-    <line x1="6" y1="6" x2="18" y2="18" />
-  </svg>
-);
-
-const PackageIcon = ({ color = '#9CA3AF' }) => (
-  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-    <path d="M16.5 9.4l-9-5.19" />
-    <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
-    <polyline points="3.27,6.96 12,12.01 20.73,6.96" />
-    <line x1="12" y1="22.08" x2="12" y2="12" />
-  </svg>
-);
-
-const CheckIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <polyline points="20,6 9,17 4,12" />
-  </svg>
-);
-
-const XIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <line x1="18" y1="6" x2="6" y2="18" />
-    <line x1="6" y1="6" x2="18" y2="18" />
-  </svg>
-);
-
-const UserIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
-  </svg>
-);
-
-const RefreshIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <polyline points="23,4 23,10 17,10" />
-    <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
-  </svg>
-);
-
-const TruckIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <rect x="1" y="3" width="15" height="13" rx="2" />
-    <path d="M16 8h4l3 3v5h-7V8z" />
-    <circle cx="5.5" cy="18.5" r="2.5" />
-    <circle cx="18.5" cy="18.5" r="2.5" />
-  </svg>
-);
-
 function UserProducts() {
-  const [activeTab, setActiveTab] = useState('pending'); // 'pending', 'approved', 'all'
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [modalType, setModalType] = useState(null); // 'approve', 'reject', 'receipt', 'details'
-  const [rejectReason, setRejectReason] = useState('');
-  const [adminNotes, setAdminNotes] = useState('');
-  const [actionLoading, setActionLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
+  const [hoveredRow, setHoveredRow] = useState(null);
+  const [hoveredBtn, setHoveredBtn] = useState(null);
+  const [hoveredSort, setHoveredSort] = useState(null);
+  const navigate = useNavigate();
+
+  // Search & Filter state
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchFilters, setSearchFilters] = useState({
+    name: true,
+    description: false,
+    category: false,
+    owner: true,
+    sku: false,
+  });
+
+  // Sort state
+  const [showSort, setShowSort] = useState(false);
+  const [sortBy, setSortBy] = useState('created_desc');
+
+  const sortOptions = [
+    { id: 'created_desc', label: 'Сначала новые' },
+    { id: 'created_asc', label: 'Сначала старые' },
+    { id: 'updated_desc', label: 'Недавно обновленные' },
+    { id: 'updated_asc', label: 'Давно обновленные' },
+    { id: 'category_asc', label: 'Категория А-Я' },
+    { id: 'category_desc', label: 'Категория Я-А' },
+  ];
+
+  const sortRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (sortRef.current && !sortRef.current.contains(e.target)) {
+        setShowSort(false);
+      }
+    };
+    if (showSort) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSort]);
+
+  const filterOptions = [
+    { id: 'name', label: 'Название' },
+    { id: 'description', label: 'Описание' },
+    { id: 'category', label: 'Категория' },
+    { id: 'owner', label: 'Владелец' },
+    { id: 'sku', label: 'Артикул' },
+  ];
+
+  const toggleFilter = (filterId) => {
+    setSearchFilters(prev => ({ ...prev, [filterId]: !prev[filterId] }));
+  };
 
   useEffect(() => {
     fetchProducts();
-  }, [activeTab]);
+  }, []);
 
   const fetchProducts = async () => {
-    setLoading(true);
     try {
-      let endpoint = '/products/';
-      if (activeTab === 'pending') {
-        endpoint = '/products/pending/';
-      } else if (activeTab === 'approved') {
-        endpoint = '/products/approved_waiting/';
-      } else {
-        // All user products
-        endpoint = '/products/?is_user_product=true&show_all=true';
-      }
-
-      const response = await fetch(`${API_URL}${endpoint}`);
-      const data = await response.json();
-      // Handle both array response and {products: [...]} response
+      const res = await fetch(`${API_URL}/products/?is_user_product=true&show_all=true`);
+      const data = await res.json();
       if (Array.isArray(data)) {
         setProducts(data);
       } else if (data.products && Array.isArray(data.products)) {
         setProducts(data.products);
+      } else if (data.results && Array.isArray(data.results)) {
+        setProducts(data.results);
       } else {
         setProducts([]);
       }
     } catch (error) {
       console.error('Error fetching products:', error);
-      setProducts([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleApprove = async () => {
-    if (!selectedProduct) return;
-    setActionLoading(true);
-    try {
-      const response = await fetch(`${API_URL}/products/${selectedProduct.id}/approve/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ admin_notes: adminNotes }),
-      });
+  const tabs = [
+    { id: 'all', label: 'Все' },
+    { id: 'pending_approval', label: 'Ожидают одобрения' },
+    { id: 'approved', label: 'Одобрены' },
+    { id: 'active', label: 'Активные' },
+    { id: 'rejected', label: 'Отклонённые' },
+  ];
 
-      if (response.ok) {
-        const data = await response.json();
-        alert(`Товар одобрен! Артикул: ${data.article}`);
-        closeModal();
-        fetchProducts();
-      } else {
-        const error = await response.json();
-        alert(`Ошибка: ${error.error || 'Не удалось одобрить товар'}`);
-      }
-    } catch (error) {
-      console.error('Error approving product:', error);
-      alert('Ошибка при одобрении товара');
-    } finally {
-      setActionLoading(false);
-    }
+  const statusConfig = {
+    pending_approval: { label: 'Ожидает одобрения', bg: '#fef3c7', color: '#92400e' },
+    approved: { label: 'Одобрен', bg: '#dbeafe', color: '#1d4ed8' },
+    active: { label: 'Активен', bg: '#d1fae5', color: '#065f46' },
+    rejected: { label: 'Отклонён', bg: '#fee2e2', color: '#991b1b' },
+    draft: { label: 'Черновик', bg: '#e4e5e7', color: '#6d7175' },
   };
 
-  const handleReject = async () => {
-    if (!selectedProduct || !rejectReason.trim()) {
-      alert('Укажите причину отклонения');
-      return;
-    }
-    setActionLoading(true);
-    try {
-      const response = await fetch(`${API_URL}/products/${selectedProduct.id}/reject/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason: rejectReason }),
-      });
-
-      if (response.ok) {
-        alert('Товар отклонён');
-        closeModal();
-        fetchProducts();
-      } else {
-        const error = await response.json();
-        alert(`Ошибка: ${error.error || 'Не удалось отклонить товар'}`);
-      }
-    } catch (error) {
-      console.error('Error rejecting product:', error);
-      alert('Ошибка при отклонении товара');
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleConfirmReceipt = async () => {
-    if (!selectedProduct) return;
-    setActionLoading(true);
-    try {
-      const response = await fetch(`${API_URL}/products/${selectedProduct.id}/confirm_receipt/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      if (response.ok) {
-        alert('Товар получен и активирован!');
-        closeModal();
-        fetchProducts();
-      } else {
-        const error = await response.json();
-        alert(`Ошибка: ${error.error || 'Не удалось подтвердить получение'}`);
-      }
-    } catch (error) {
-      console.error('Error confirming receipt:', error);
-      alert('Ошибка при подтверждении получения');
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const openModal = (product, type) => {
-    setSelectedProduct(product);
-    setModalType(type);
-    setRejectReason('');
-    setAdminNotes('');
-  };
-
-  const closeModal = () => {
-    setSelectedProduct(null);
-    setModalType(null);
-    setRejectReason('');
-    setAdminNotes('');
-  };
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '-';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const formatMoney = (amount) => {
-    return new Intl.NumberFormat('ru-RU').format(amount || 0) + ' ₽';
-  };
-
-  const getStatusBadge = (status) => {
-    const statusMap = {
-      pending_approval: { label: 'Ожидает одобрения', color: '#F59E0B', bg: '#FEF3C7' },
-      approved: { label: 'Одобрен (ожидает товар)', color: '#3B82F6', bg: '#DBEAFE' },
-      active: { label: 'Активный', color: '#10B981', bg: '#D1FAE5' },
-      rejected: { label: 'Отклонён', color: '#EF4444', bg: '#FEE2E2' },
-    };
-    return statusMap[status] || { label: status, color: '#6B7280', bg: '#F3F4F6' };
+  const getStatusInfo = (status) => {
+    return statusConfig[status] || { label: status || 'Неизвестно', bg: '#f3f4f6', color: '#374151' };
   };
 
   const filteredProducts = products.filter(product => {
-    const searchLower = searchTerm.toLowerCase().trim();
-    if (!searchLower) return true;
+    // Tab filter
+    if (activeTab !== 'all' && product.product_status !== activeTab) return false;
 
-    const nameMatch = product.name?.toLowerCase().includes(searchLower);
-    const articleMatch = product.article?.toLowerCase().includes(searchLower);
-    const ownerMatch = product.owner_username?.toLowerCase().includes(searchLower);
-    const skuMatch = product.sku?.toLowerCase().includes(searchLower);
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      let matches = false;
 
-    return nameMatch || articleMatch || ownerMatch || skuMatch;
+      if (searchFilters.name && product.name?.toLowerCase().includes(query)) {
+        matches = true;
+      }
+      if (searchFilters.description && product.description?.toLowerCase().includes(query)) {
+        matches = true;
+      }
+      if (searchFilters.category) {
+        const catName = product.category_name?.toLowerCase() || '';
+        const catPath = product.category_full_path?.toLowerCase() || '';
+        if (catName.includes(query) || catPath.includes(query)) {
+          matches = true;
+        }
+      }
+      if (searchFilters.owner && product.owner_username?.toLowerCase().includes(query)) {
+        matches = true;
+      }
+      if (searchFilters.sku && product.sku?.toLowerCase().includes(query)) {
+        matches = true;
+      }
+
+      if (!matches) return false;
+    }
+
+    return true;
+  }).sort((a, b) => {
+    switch (sortBy) {
+      case 'created_asc':
+        return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+      case 'created_desc':
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      case 'updated_asc':
+        return new Date(a.updated_at || 0) - new Date(b.updated_at || 0);
+      case 'updated_desc':
+        return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
+      case 'category_asc':
+        return (a.category_name || '').localeCompare(b.category_name || '', 'ru');
+      case 'category_desc':
+        return (b.category_name || '').localeCompare(a.category_name || '', 'ru');
+      default:
+        return 0;
+    }
   });
 
-  const tabs = [
-    { id: 'pending', label: 'Ожидают одобрения', count: products.length },
-    { id: 'approved', label: 'Ожидают товар', count: products.length },
-    { id: 'all', label: 'Все товары пользователей', count: null },
-  ];
+  const getParentCategory = (product) => {
+    if (product.category_full_path) {
+      const parts = product.category_full_path.split(' > ');
+      return parts[0];
+    }
+    return product.category_name || '—';
+  };
+
+  const getProductImage = (product) => {
+    if (product.primary_image) return product.primary_image;
+    if (product.images && product.images.length > 0) return product.images[0].image_url;
+    return null;
+  };
 
   if (loading) {
     return (
-      <div style={styles.loadingContainer}>
+      <div style={styles.loading}>
         <div style={styles.spinner}></div>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
-      {/* Page Header */}
-      <div style={styles.pageHeader}>
-        <div>
-          <h1 style={styles.pageTitle}>Товары пользователей</h1>
-          <p style={styles.pageSubtitle}>Модерация и управление товарами от клиентов</p>
-        </div>
-        <button onClick={fetchProducts} style={styles.refreshButton}>
-          <RefreshIcon />
-          Обновить
-        </button>
-      </div>
-
-      {/* Tabs */}
-      <div style={styles.tabsContainer}>
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            style={{
-              ...styles.tab,
-              ...(activeTab === tab.id ? styles.tabActive : {}),
-            }}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.label}
-            {tab.id !== 'all' && activeTab === tab.id && filteredProducts.length > 0 && (
-              <span style={styles.tabBadge}>{filteredProducts.length}</span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Search */}
-      <div style={styles.searchContainer}>
-        <div style={styles.searchBox}>
-          <SearchIcon />
-          <input
-            type="text"
-            placeholder="Поиск по названию, артикулу, владельцу..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={styles.searchInput}
-          />
-          {searchTerm && (
-            <button style={styles.clearBtn} onClick={() => setSearchTerm('')}>
-              <CloseIcon />
-            </button>
-          )}
+    <div style={styles.page}>
+      {/* Header */}
+      <div style={styles.header}>
+        <div style={styles.titleRow}>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="#303030">
+            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
+          </svg>
+          <h1 style={styles.title}>Товары пользователей</h1>
         </div>
       </div>
 
-      {/* Products Table */}
-      {filteredProducts.length === 0 ? (
-        <div style={styles.emptyState}>
-          <PackageIcon color="#9CA3AF" />
-          <h3 style={styles.emptyTitle}>
-            {activeTab === 'pending' ? 'Нет товаров на модерации' :
-             activeTab === 'approved' ? 'Нет товаров, ожидающих получения' :
-             'Нет товаров пользователей'}
-          </h3>
-          <p style={styles.emptyText}>
-            {activeTab === 'pending' ? 'Все товары проверены' :
-             activeTab === 'approved' ? 'Все одобренные товары уже получены' :
-             'Пользователи ещё не добавили товары'}
-          </p>
-        </div>
-      ) : (
-        <div style={styles.tableContainer}>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Фото</th>
-                <th style={styles.th}>Товар</th>
-                <th style={styles.th}>Артикул</th>
-                <th style={styles.th}>Владелец</th>
-                <th style={styles.th}>Цены</th>
-                <th style={styles.th}>Статус</th>
-                <th style={styles.th}>Дата</th>
-                <th style={styles.th}>Действия</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProducts.map((product) => {
-                const status = getStatusBadge(product.product_status);
-                return (
-                  <tr key={product.id} style={styles.tr}>
-                    <td style={styles.td}>
-                      {product.images && product.images.length > 0 ? (
-                        <img
-                          src={product.images[0].image_url}
-                          alt={product.name}
-                          style={styles.productImage}
-                        />
-                      ) : (
-                        <div style={styles.imagePlaceholder}>
-                          <PackageIcon color="#9CA3AF" />
-                        </div>
-                      )}
-                    </td>
-                    <td style={styles.td}>
-                      <div style={styles.productInfo}>
-                        <span style={styles.productName}>{product.name}</span>
-                        <span style={styles.productCategory}>{product.category_full_path || product.category_name}</span>
-                      </div>
-                    </td>
-                    <td style={styles.td}>
-                      <span style={styles.articleCode}>{product.article || '-'}</span>
-                    </td>
-                    <td style={styles.td}>
-                      <div style={styles.ownerInfo}>
-                        <UserIcon />
-                        <span>{product.owner_username || 'Не указан'}</span>
-                      </div>
-                    </td>
-                    <td style={styles.td}>
-                      <div style={styles.pricesInfo}>
-                        <div style={styles.priceRow}>
-                          <span style={styles.priceLabel}>Розн:</span>
-                          <span style={styles.priceValue}>{formatMoney(product.retail_price || product.price)}</span>
-                        </div>
-                        <div style={styles.priceRow}>
-                          <span style={styles.priceLabel}>Опт:</span>
-                          <span style={styles.priceValueWholesale}>{formatMoney(product.wholesale_price || product.price)}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td style={styles.td}>
-                      <span style={{
-                        ...styles.statusBadge,
-                        backgroundColor: status.bg,
-                        color: status.color,
-                      }}>
-                        {status.label}
-                      </span>
-                    </td>
-                    <td style={styles.td}>
-                      <span style={styles.dateText}>
-                        {formatDate(product.submitted_at)}
-                      </span>
-                    </td>
-                    <td style={styles.td}>
-                      <div style={styles.actionsCell}>
-                        <button
-                          style={styles.detailsBtn}
-                          onClick={() => openModal(product, 'details')}
-                        >
-                          Детали
-                        </button>
-                        {product.product_status === 'pending_approval' && (
-                          <>
-                            <button
-                              style={styles.approveBtn}
-                              onClick={() => openModal(product, 'approve')}
-                            >
-                              <CheckIcon />
-                            </button>
-                            <button
-                              style={styles.rejectBtn}
-                              onClick={() => openModal(product, 'reject')}
-                            >
-                              <XIcon />
-                            </button>
-                          </>
-                        )}
-                        {product.product_status === 'approved' && (
-                          <button
-                            style={styles.receiptBtn}
-                            onClick={() => openModal(product, 'receipt')}
-                          >
-                            <TruckIcon />
-                            Получен
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Modal */}
-      {modalType && selectedProduct && (
-        <div style={styles.modalOverlay} onClick={closeModal}>
-          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div style={styles.modalHeader}>
-              <h2 style={styles.modalTitle}>
-                {modalType === 'approve' && 'Одобрить товар'}
-                {modalType === 'reject' && 'Отклонить товар'}
-                {modalType === 'receipt' && 'Подтвердить получение'}
-                {modalType === 'details' && 'Информация о товаре'}
-              </h2>
-              <button style={styles.modalCloseBtn} onClick={closeModal}>
-                <CloseIcon />
+      {/* Card container */}
+      <div style={styles.card}>
+        {/* Tabs */}
+        <div style={styles.tabsRow}>
+          <div style={styles.tabsLeft}>
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                style={activeTab === tab.id ? styles.tabActive : styles.tab}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.label}
               </button>
-            </div>
-
-            <div style={styles.modalBody}>
-              {/* Product Preview */}
-              <div style={styles.productPreview}>
-                {selectedProduct.images && selectedProduct.images.length > 0 ? (
-                  <img
-                    src={selectedProduct.images[0].image_url}
-                    alt={selectedProduct.name}
-                    style={styles.previewImage}
-                  />
-                ) : (
-                  <div style={styles.previewPlaceholder}>
-                    <PackageIcon color="#9CA3AF" />
-                  </div>
-                )}
-                <div style={styles.previewInfo}>
-                  <h3 style={styles.previewName}>{selectedProduct.name}</h3>
-                  <p style={styles.previewCategory}>{selectedProduct.category_full_path}</p>
-                  {selectedProduct.article && (
-                    <span style={styles.previewArticle}>Артикул: {selectedProduct.article}</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Owner Info */}
-              <div style={styles.infoSection}>
-                <h4 style={styles.infoTitle}>Владелец</h4>
-                <div style={styles.infoRow}>
-                  <UserIcon />
-                  <span>{selectedProduct.owner_username || 'Не указан'}</span>
-                </div>
-                <div style={styles.infoRow}>
-                  <span style={styles.infoLabel}>Отправлено:</span>
-                  <span>{formatDate(selectedProduct.submitted_at)}</span>
-                </div>
-                {selectedProduct.approved_at && (
-                  <div style={styles.infoRow}>
-                    <span style={styles.infoLabel}>Одобрено:</span>
-                    <span>{formatDate(selectedProduct.approved_at)}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Prices */}
-              <div style={styles.infoSection}>
-                <h4 style={styles.infoTitle}>Цены</h4>
-                <div style={styles.pricesGrid}>
-                  <div style={styles.priceCard}>
-                    <span style={styles.priceCardLabel}>Розничная</span>
-                    <span style={styles.priceCardValue}>{formatMoney(selectedProduct.retail_price || selectedProduct.price)}</span>
-                  </div>
-                  <div style={styles.priceCard}>
-                    <span style={styles.priceCardLabel}>Оптовая</span>
-                    <span style={styles.priceCardValueWholesale}>{formatMoney(selectedProduct.wholesale_price || selectedProduct.price)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Colors & Sizes */}
-              {selectedProduct.colors && selectedProduct.colors.length > 0 && (
-                <div style={styles.infoSection}>
-                  <h4 style={styles.infoTitle}>Цвета</h4>
-                  <div style={styles.colorsRow}>
-                    {selectedProduct.colors.map((color, idx) => (
-                      <div key={idx} style={styles.colorChip}>
-                        <span
-                          style={{
-                            ...styles.colorDot,
-                            backgroundColor: color.hex_code || '#ccc',
-                          }}
-                        />
-                        <span>{color.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {selectedProduct.sizes && selectedProduct.sizes.length > 0 && (
-                <div style={styles.infoSection}>
-                  <h4 style={styles.infoTitle}>Размеры</h4>
-                  <div style={styles.sizesRow}>
-                    {selectedProduct.sizes.map((size, idx) => (
-                      <span key={idx} style={styles.sizeChip}>{size.name}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Action Specific Content */}
-              {modalType === 'approve' && (
-                <div style={styles.actionSection}>
-                  <label style={styles.inputLabel}>Заметки администратора (необязательно)</label>
-                  <textarea
-                    style={styles.textarea}
-                    value={adminNotes}
-                    onChange={(e) => setAdminNotes(e.target.value)}
-                    placeholder="Комментарий к товару..."
-                    rows={3}
-                  />
-                  <p style={styles.actionHint}>
-                    Товару будет присвоен уникальный артикул и он перейдёт в статус "Ожидает получения".
-                    Клиент должен привезти товар на склад.
-                  </p>
-                </div>
-              )}
-
-              {modalType === 'reject' && (
-                <div style={styles.actionSection}>
-                  <label style={styles.inputLabel}>Причина отклонения *</label>
-                  <textarea
-                    style={styles.textarea}
-                    value={rejectReason}
-                    onChange={(e) => setRejectReason(e.target.value)}
-                    placeholder="Укажите причину отклонения товара..."
-                    rows={3}
-                    required
-                  />
-                </div>
-              )}
-
-              {modalType === 'receipt' && (
-                <div style={styles.actionSection}>
-                  <p style={styles.receiptInfo}>
-                    Подтвердите, что товар с артикулом <strong>{selectedProduct.article}</strong> получен на склад.
-                    После подтверждения товар станет активным и будет доступен в каталоге.
-                  </p>
+            ))}
+          </div>
+          <div style={styles.tabsRight}>
+            <button
+              style={{
+                ...styles.iconBtn,
+                backgroundColor: showSearch ? '#e4e5e7' : hoveredBtn === 'search' ? '#f1f1f1' : '#fff',
+                borderColor: showSearch ? '#8c9196' : '#c9cccf',
+              }}
+              onClick={() => setShowSearch(!showSearch)}
+              onMouseEnter={() => setHoveredBtn('search')}
+              onMouseLeave={() => setHoveredBtn(null)}
+            >
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="#5c5f62">
+                <path d="M8 12a4 4 0 110-8 4 4 0 010 8zm9.707 4.293l-4.82-4.82A5.968 5.968 0 0014 8 6 6 0 102 8a6 6 0 006 6 5.968 5.968 0 003.473-1.113l4.82 4.82a1 1 0 001.414-1.414z"/>
+              </svg>
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="#5c5f62">
+                <path d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm2 4a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1zm2 4a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z"/>
+              </svg>
+            </button>
+            <div ref={sortRef} style={styles.sortWrapper}>
+              <button
+                style={{
+                  ...styles.iconBtn,
+                  backgroundColor: showSort ? '#e4e5e7' : hoveredBtn === 'sort' ? '#f1f1f1' : '#fff',
+                  borderColor: showSort ? '#8c9196' : '#c9cccf',
+                }}
+                onClick={() => setShowSort(!showSort)}
+                onMouseEnter={() => setHoveredBtn('sort')}
+                onMouseLeave={() => setHoveredBtn(null)}
+              >
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="#5c5f62">
+                  <path d="M17 8a1 1 0 01-.707-.293L13 4.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4A1 1 0 0117 8zM3 12a1 1 0 01.707.293L7 15.586l3.293-3.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4A1 1 0 013 12z"/>
+                </svg>
+              </button>
+              {showSort && (
+                <div style={styles.sortDropdown}>
+                  {sortOptions.map(opt => (
+                    <div
+                      key={opt.id}
+                      onClick={() => { setSortBy(opt.id); setShowSort(false); }}
+                      onMouseEnter={() => setHoveredSort(opt.id)}
+                      onMouseLeave={() => setHoveredSort(null)}
+                      style={{
+                        ...styles.sortOption,
+                        backgroundColor: sortBy === opt.id ? '#f1f1f1' : hoveredSort === opt.id ? '#f6f6f7' : 'transparent',
+                        fontWeight: sortBy === opt.id ? '600' : '400',
+                      }}
+                    >
+                      {sortBy === opt.id && (
+                        <svg width="14" height="14" viewBox="0 0 20 20" fill="#303030" style={{ marginRight: 8 }}>
+                          <path d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z"/>
+                        </svg>
+                      )}
+                      <span style={{ marginLeft: sortBy === opt.id ? 0 : 22 }}>{opt.label}</span>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
+          </div>
+        </div>
 
-            {/* Modal Footer */}
-            {modalType !== 'details' && (
-              <div style={styles.modalFooter}>
-                <button style={styles.cancelBtn} onClick={closeModal}>
-                  Отмена
+        {/* Search Panel */}
+        {showSearch && (
+          <div style={styles.searchPanel}>
+            <div style={styles.searchInputWrapper}>
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="#8c9196" style={styles.searchIcon}>
+                <path d="M8 12a4 4 0 110-8 4 4 0 010 8zm9.707 4.293l-4.82-4.82A5.968 5.968 0 0014 8 6 6 0 102 8a6 6 0 006 6 5.968 5.968 0 003.473-1.113l4.82 4.82a1 1 0 001.414-1.414z"/>
+              </svg>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Поиск товаров пользователей..."
+                style={styles.searchInput}
+                autoFocus
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  style={styles.searchClear}
+                >
+                  ×
                 </button>
-                {modalType === 'approve' && (
+              )}
+            </div>
+            <div style={styles.filterSection}>
+              <span style={styles.filterLabel}>Искать по:</span>
+              <div style={styles.filterOptions}>
+                {filterOptions.map(opt => (
                   <button
-                    style={styles.confirmApproveBtn}
-                    onClick={handleApprove}
-                    disabled={actionLoading}
+                    key={opt.id}
+                    type="button"
+                    onClick={() => toggleFilter(opt.id)}
+                    style={{
+                      ...styles.filterChip,
+                      backgroundColor: searchFilters[opt.id] ? '#303030' : '#fff',
+                      color: searchFilters[opt.id] ? '#fff' : '#303030',
+                      borderColor: searchFilters[opt.id] ? '#303030' : '#c9cccf',
+                    }}
                   >
-                    {actionLoading ? 'Обработка...' : 'Одобрить товар'}
+                    {opt.label}
                   </button>
-                )}
-                {modalType === 'reject' && (
-                  <button
-                    style={styles.confirmRejectBtn}
-                    onClick={handleReject}
-                    disabled={actionLoading || !rejectReason.trim()}
-                  >
-                    {actionLoading ? 'Обработка...' : 'Отклонить товар'}
-                  </button>
-                )}
-                {modalType === 'receipt' && (
-                  <button
-                    style={styles.confirmReceiptBtn}
-                    onClick={handleConfirmReceipt}
-                    disabled={actionLoading}
-                  >
-                    {actionLoading ? 'Обработка...' : 'Подтвердить получение'}
-                  </button>
-                )}
+                ))}
+              </div>
+            </div>
+            {searchQuery && (
+              <div style={styles.searchResults}>
+                Найдено: {filteredProducts.length} товаров
               </div>
             )}
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Table */}
+        <table style={styles.table}>
+          <thead>
+            <tr>
+              <th style={styles.thCheck}>
+                <input type="checkbox" style={styles.checkbox} />
+              </th>
+              <th style={styles.th}>Товар</th>
+              <th style={styles.th}>Артикул</th>
+              <th style={styles.th}>Владелец</th>
+              <th style={styles.th}>Статус</th>
+              <th style={styles.th}>Категория</th>
+              <th style={styles.th}>Цена</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredProducts.map((product, idx) => {
+              const imageUrl = getProductImage(product);
+              const statusInfo = getStatusInfo(product.product_status);
+              return (
+                <tr
+                  key={product.id}
+                  style={{
+                    ...styles.tr,
+                    backgroundColor: hoveredRow === idx ? '#f6f6f7' : '#fff',
+                  }}
+                  onMouseEnter={() => setHoveredRow(idx)}
+                  onMouseLeave={() => setHoveredRow(null)}
+                  onClick={() => navigate(`/products/${product.id}`)}
+                >
+                  <td style={styles.tdCheck} onClick={e => e.stopPropagation()}>
+                    <input type="checkbox" style={styles.checkbox} />
+                  </td>
+                  <td style={styles.td}>
+                    <div style={styles.productCell}>
+                      {imageUrl ? (
+                        <img src={imageUrl} alt={product.name} style={styles.productImage} />
+                      ) : (
+                        <div style={styles.imagePlaceholder}>
+                          <svg width="16" height="16" viewBox="0 0 20 20" fill="#8c9196">
+                            <path d="M2.5 4A1.5 1.5 0 014 2.5h12A1.5 1.5 0 0117.5 4v12a1.5 1.5 0 01-1.5 1.5H4A1.5 1.5 0 012.5 16V4zm3.25 3a1.25 1.25 0 100-2.5 1.25 1.25 0 000 2.5zm9.75 3.5l-3-3-4.5 4.5-1.5-1.5-4 4V16h12a.5.5 0 00.5-.5v-4.5z"/>
+                          </svg>
+                        </div>
+                      )}
+                      <span style={styles.productName}>{product.name}</span>
+                    </div>
+                  </td>
+                  <td style={styles.td}>
+                    <span style={styles.skuText}>{product.sku || '—'}</span>
+                  </td>
+                  <td style={styles.td}>
+                    <div style={styles.ownerCell}>
+                      <div style={styles.ownerAvatar}>
+                        {(product.owner_username || '?')[0].toUpperCase()}
+                      </div>
+                      <span style={styles.ownerName}>{product.owner_username || '—'}</span>
+                    </div>
+                  </td>
+                  <td style={styles.td}>
+                    <span style={{
+                      ...styles.statusBadge,
+                      backgroundColor: statusInfo.bg,
+                      color: statusInfo.color,
+                    }}>
+                      {statusInfo.label}
+                    </span>
+                  </td>
+                  <td style={styles.td}>{getParentCategory(product)}</td>
+                  <td style={styles.td}>
+                    {product.retail_price ? `${Number(product.retail_price).toLocaleString()} ₽` : '—'}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+
+        {filteredProducts.length === 0 && (
+          <div style={styles.empty}>
+            <svg width="48" height="48" viewBox="0 0 20 20" fill="#8c9196" style={{ marginBottom: 12 }}>
+              <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
+            </svg>
+            <p style={styles.emptyTitle}>Товары не найдены</p>
+            <p style={styles.emptyText}>Попробуйте изменить параметры поиска или фильтры</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 const styles = {
-  container: {
-    padding: '24px 32px',
-    maxWidth: '1400px',
-    margin: '0 auto',
+  page: {
+    padding: '16px 20px',
   },
-  loadingContainer: {
+  loading: {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    height: '400px',
+    height: '300px',
   },
   spinner: {
     width: '40px',
     height: '40px',
-    border: '3px solid #F5F5F7',
-    borderTopColor: '#FF6B35',
+    border: '4px solid #e3e3e3',
+    borderTopColor: '#333',
     borderRadius: '50%',
     animation: 'spin 1s linear infinite',
   },
 
-  // Header
-  pageHeader: {
+  header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '24px',
+    marginBottom: '16px',
   },
-  pageTitle: {
-    fontSize: '24px',
-    fontWeight: '700',
-    color: '#1A1A1A',
-    margin: 0,
-  },
-  pageSubtitle: {
-    fontSize: '14px',
-    color: '#6B7280',
-    margin: '4px 0 0 0',
-  },
-  refreshButton: {
+  titleRow: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    padding: '10px 16px',
-    backgroundColor: '#F5F5F7',
-    color: '#374151',
-    border: 'none',
-    borderRadius: '10px',
-    fontSize: '14px',
-    fontWeight: '500',
-    cursor: 'pointer',
   },
-
-  // Tabs
-  tabsContainer: {
-    display: 'flex',
-    gap: '8px',
-    marginBottom: '20px',
-    backgroundColor: '#FFFFFF',
-    padding: '8px',
-    borderRadius: '12px',
-  },
-  tab: {
-    padding: '10px 20px',
-    backgroundColor: 'transparent',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '14px',
-    fontWeight: '500',
-    color: '#6B7280',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    transition: 'all 0.15s ease',
-  },
-  tabActive: {
-    backgroundColor: '#FF6B35',
-    color: '#FFFFFF',
-  },
-  tabBadge: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    padding: '2px 8px',
-    borderRadius: '10px',
-    fontSize: '12px',
-    fontWeight: '600',
-  },
-
-  // Search
-  searchContainer: {
-    marginBottom: '20px',
-  },
-  searchBox: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    backgroundColor: '#FFFFFF',
-    borderRadius: '10px',
-    padding: '12px 16px',
-    maxWidth: '400px',
-  },
-  searchInput: {
-    flex: 1,
-    border: 'none',
-    background: 'none',
-    outline: 'none',
-    fontSize: '14px',
-    color: '#1A1A1A',
-  },
-  clearBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '24px',
-    height: '24px',
-    backgroundColor: '#E5E7EB',
-    border: 'none',
-    borderRadius: '50%',
-    cursor: 'pointer',
-    color: '#6B7280',
-  },
-
-  // Empty State
-  emptyState: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '80px 40px',
-    backgroundColor: '#FFFFFF',
-    borderRadius: '16px',
-  },
-  emptyTitle: {
+  title: {
     fontSize: '18px',
     fontWeight: '600',
-    color: '#1A1A1A',
-    marginTop: '16px',
-    marginBottom: '8px',
-  },
-  emptyText: {
-    fontSize: '14px',
-    color: '#9CA3AF',
-    textAlign: 'center',
+    color: '#303030',
+    margin: 0,
   },
 
-  // Table
-  tableContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: '16px',
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: '12px',
+    border: '1px solid #e1e3e5',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.05)',
     overflow: 'hidden',
   },
+
+  tabsRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '0 12px',
+    borderBottom: '1px solid #e1e3e5',
+  },
+  tabsLeft: {
+    display: 'flex',
+    alignItems: 'center',
+  },
+  tab: {
+    padding: '10px 12px',
+    backgroundColor: 'transparent',
+    border: 'none',
+    borderBottom: '2px solid transparent',
+    fontSize: '13px',
+    fontWeight: '500',
+    color: '#6d7175',
+    cursor: 'pointer',
+  },
+  tabActive: {
+    padding: '10px 12px',
+    backgroundColor: 'transparent',
+    border: 'none',
+    borderBottom: '2px solid #303030',
+    fontSize: '13px',
+    fontWeight: '600',
+    color: '#303030',
+    cursor: 'pointer',
+  },
+  tabsRight: {
+    display: 'flex',
+    gap: '6px',
+  },
+  iconBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '5px 10px',
+    backgroundColor: '#fff',
+    border: '1px solid #c9cccf',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    boxShadow: '0 1px 0 rgba(0,0,0,0.04), inset 0 -1px 0 rgba(0,0,0,0.1)',
+    transition: 'background-color 0.15s',
+  },
+
   table: {
     width: '100%',
     borderCollapse: 'collapse',
   },
   th: {
-    padding: '16px',
+    padding: '8px 12px',
     textAlign: 'left',
     fontSize: '12px',
-    fontWeight: '600',
-    color: '#6B7280',
-    borderBottom: '1px solid #E5E7EB',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
+    fontWeight: '500',
+    color: '#6d7175',
+    backgroundColor: '#f6f6f7',
+    borderBottom: '1px solid #e1e3e5',
+  },
+  thCheck: {
+    padding: '8px 12px',
+    width: '36px',
+    backgroundColor: '#f6f6f7',
+    borderBottom: '1px solid #e1e3e5',
   },
   tr: {
-    borderBottom: '1px solid #F3F4F6',
+    cursor: 'pointer',
+    transition: 'background-color 0.15s',
   },
   td: {
-    padding: '16px',
-    verticalAlign: 'middle',
+    padding: '8px 12px',
+    fontSize: '13px',
+    color: '#303030',
+    borderBottom: '1px solid #e1e3e5',
+  },
+  tdCheck: {
+    padding: '8px 12px',
+    width: '36px',
+    borderBottom: '1px solid #e1e3e5',
+  },
+  checkbox: {
+    width: '16px',
+    height: '16px',
+    cursor: 'pointer',
   },
 
+  productCell: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+  },
   productImage: {
-    width: '50px',
-    height: '50px',
-    borderRadius: '8px',
+    width: '36px',
+    height: '36px',
+    borderRadius: '6px',
     objectFit: 'cover',
+    border: '1px solid #e1e3e5',
   },
   imagePlaceholder: {
-    width: '50px',
-    height: '50px',
-    borderRadius: '8px',
-    backgroundColor: '#F5F5F7',
+    width: '36px',
+    height: '36px',
+    borderRadius: '6px',
+    backgroundColor: '#f1f1f1',
+    border: '1px solid #e1e3e5',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  productInfo: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4px',
-  },
   productName: {
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#1A1A1A',
-  },
-  productCategory: {
-    fontSize: '12px',
-    color: '#9CA3AF',
-  },
-
-  articleCode: {
-    fontFamily: 'monospace',
     fontSize: '13px',
-    color: '#374151',
-    backgroundColor: '#F3F4F6',
-    padding: '4px 8px',
-    borderRadius: '4px',
+    fontWeight: '500',
+    color: '#303030',
+  },
+  skuText: {
+    fontSize: '12px',
+    color: '#6d7175',
+    fontFamily: 'monospace',
   },
 
-  ownerInfo: {
+  ownerCell: {
     display: 'flex',
     alignItems: 'center',
-    gap: '6px',
-    fontSize: '13px',
-    color: '#374151',
-  },
-
-  pricesInfo: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4px',
-  },
-  priceRow: {
-    display: 'flex',
     gap: '8px',
-    fontSize: '12px',
   },
-  priceLabel: {
-    color: '#9CA3AF',
-  },
-  priceValue: {
+  ownerAvatar: {
+    width: '28px',
+    height: '28px',
+    borderRadius: '6px',
+    backgroundColor: '#f6f6f7',
+    border: '1px solid #e1e3e5',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '11px',
     fontWeight: '600',
-    color: '#1A1A1A',
+    color: '#6d7175',
   },
-  priceValueWholesale: {
-    fontWeight: '600',
-    color: '#FF6B35',
+  ownerName: {
+    fontSize: '13px',
+    color: '#303030',
   },
 
   statusBadge: {
     display: 'inline-block',
-    padding: '4px 10px',
-    borderRadius: '6px',
+    padding: '2px 8px',
+    borderRadius: '10px',
     fontSize: '12px',
     fontWeight: '500',
   },
 
-  dateText: {
-    fontSize: '13px',
-    color: '#6B7280',
-  },
-
-  actionsCell: {
-    display: 'flex',
-    gap: '8px',
-    alignItems: 'center',
-  },
-  detailsBtn: {
-    padding: '6px 12px',
-    backgroundColor: '#F5F5F7',
-    color: '#374151',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '13px',
-    fontWeight: '500',
-    cursor: 'pointer',
-  },
-  approveBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '32px',
-    height: '32px',
-    backgroundColor: '#D1FAE5',
-    color: '#10B981',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-  },
-  rejectBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '32px',
-    height: '32px',
-    backgroundColor: '#FEE2E2',
-    color: '#EF4444',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-  },
-  receiptBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '6px 12px',
-    backgroundColor: '#DBEAFE',
-    color: '#3B82F6',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '13px',
-    fontWeight: '500',
-    cursor: 'pointer',
-  },
-
-  // Modal
-  modalOverlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
-  },
-  modal: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: '16px',
-    width: '90%',
-    maxWidth: '500px',
-    maxHeight: '90vh',
-    overflow: 'auto',
-  },
-  modalHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '20px 24px',
-    borderBottom: '1px solid #E5E7EB',
-  },
-  modalTitle: {
-    fontSize: '18px',
-    fontWeight: '600',
-    color: '#1A1A1A',
-    margin: 0,
-  },
-  modalCloseBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '32px',
-    height: '32px',
-    backgroundColor: '#F5F5F7',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    color: '#6B7280',
-  },
-  modalBody: {
-    padding: '24px',
-  },
-  modalFooter: {
-    display: 'flex',
-    justifyContent: 'flex-end',
-    gap: '12px',
-    padding: '16px 24px',
-    borderTop: '1px solid #E5E7EB',
-  },
-
-  // Product Preview
-  productPreview: {
-    display: 'flex',
-    gap: '16px',
-    marginBottom: '24px',
-    padding: '16px',
-    backgroundColor: '#F9FAFB',
-    borderRadius: '12px',
-  },
-  previewImage: {
-    width: '80px',
-    height: '80px',
-    borderRadius: '8px',
-    objectFit: 'cover',
-  },
-  previewPlaceholder: {
-    width: '80px',
-    height: '80px',
-    borderRadius: '8px',
-    backgroundColor: '#E5E7EB',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  previewInfo: {
-    flex: 1,
-  },
-  previewName: {
-    fontSize: '16px',
-    fontWeight: '600',
-    color: '#1A1A1A',
-    margin: '0 0 4px 0',
-  },
-  previewCategory: {
-    fontSize: '13px',
-    color: '#6B7280',
-    margin: '0 0 8px 0',
-  },
-  previewArticle: {
-    fontSize: '12px',
-    fontFamily: 'monospace',
-    color: '#374151',
-    backgroundColor: '#E5E7EB',
-    padding: '4px 8px',
-    borderRadius: '4px',
-  },
-
-  // Info Sections
-  infoSection: {
-    marginBottom: '20px',
-  },
-  infoTitle: {
-    fontSize: '13px',
-    fontWeight: '600',
-    color: '#6B7280',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-    margin: '0 0 12px 0',
-  },
-  infoRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    fontSize: '14px',
-    color: '#374151',
-    marginBottom: '8px',
-  },
-  infoLabel: {
-    color: '#9CA3AF',
-  },
-
-  pricesGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '12px',
-  },
-  priceCard: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: '8px',
-    padding: '12px',
+  empty: {
+    padding: '60px 40px',
     textAlign: 'center',
   },
-  priceCardLabel: {
-    display: 'block',
-    fontSize: '12px',
-    color: '#6B7280',
-    marginBottom: '4px',
+  emptyTitle: {
+    fontSize: '15px',
+    fontWeight: '600',
+    color: '#303030',
+    margin: '0 0 4px 0',
   },
-  priceCardValue: {
-    fontSize: '18px',
-    fontWeight: '700',
-    color: '#1A1A1A',
-  },
-  priceCardValueWholesale: {
-    fontSize: '18px',
-    fontWeight: '700',
-    color: '#FF6B35',
+  emptyText: {
+    fontSize: '13px',
+    color: '#6d7175',
+    margin: 0,
   },
 
-  colorsRow: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '8px',
+  // Search Panel styles
+  searchPanel: {
+    padding: '12px 16px',
+    backgroundColor: '#f6f6f7',
+    borderBottom: '1px solid #e1e3e5',
   },
-  colorChip: {
+  searchInputWrapper: {
+    position: 'relative',
     display: 'flex',
     alignItems: 'center',
-    gap: '6px',
-    padding: '6px 12px',
-    backgroundColor: '#F9FAFB',
-    borderRadius: '20px',
-    fontSize: '13px',
-    color: '#374151',
   },
-  colorDot: {
-    width: '14px',
-    height: '14px',
-    borderRadius: '50%',
-    border: '1px solid rgba(0,0,0,0.1)',
+  searchIcon: {
+    position: 'absolute',
+    left: '12px',
+    pointerEvents: 'none',
   },
-
-  sizesRow: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '8px',
-  },
-  sizeChip: {
-    padding: '6px 12px',
-    backgroundColor: '#F9FAFB',
-    borderRadius: '6px',
-    fontSize: '13px',
-    color: '#374151',
-    fontWeight: '500',
-  },
-
-  // Action Section
-  actionSection: {
-    marginTop: '20px',
-    padding: '16px',
-    backgroundColor: '#F9FAFB',
-    borderRadius: '12px',
-  },
-  inputLabel: {
-    display: 'block',
-    fontSize: '13px',
-    fontWeight: '500',
-    color: '#374151',
-    marginBottom: '8px',
-  },
-  textarea: {
+  searchInput: {
     width: '100%',
-    padding: '12px',
-    border: '1px solid #E5E7EB',
-    borderRadius: '8px',
-    fontSize: '14px',
-    resize: 'vertical',
-    fontFamily: 'inherit',
-  },
-  actionHint: {
+    padding: '8px 36px 8px 36px',
     fontSize: '13px',
-    color: '#6B7280',
-    marginTop: '12px',
-    lineHeight: '1.5',
+    color: '#202223',
+    backgroundColor: '#fff',
+    border: '1px solid #c9cccf',
+    borderRadius: '8px',
+    outline: 'none',
+    boxSizing: 'border-box',
   },
-  receiptInfo: {
+  searchClear: {
+    position: 'absolute',
+    right: '10px',
+    width: '20px',
+    height: '20px',
+    border: 'none',
+    backgroundColor: '#8c9196',
+    color: '#fff',
+    borderRadius: '50%',
     fontSize: '14px',
-    color: '#374151',
-    lineHeight: '1.6',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    lineHeight: 1,
+  },
+  filterSection: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    marginTop: '10px',
+    flexWrap: 'wrap',
+  },
+  filterLabel: {
+    fontSize: '12px',
+    color: '#6d7175',
+    fontWeight: '500',
+  },
+  filterOptions: {
+    display: 'flex',
+    gap: '6px',
+    flexWrap: 'wrap',
+  },
+  filterChip: {
+    padding: '4px 10px',
+    fontSize: '12px',
+    fontWeight: '500',
+    border: '1px solid #c9cccf',
+    borderRadius: '16px',
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+  },
+  searchResults: {
+    marginTop: '10px',
+    fontSize: '12px',
+    color: '#6d7175',
   },
 
-  // Buttons
-  cancelBtn: {
-    padding: '10px 20px',
-    backgroundColor: '#F5F5F7',
-    color: '#374151',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '14px',
-    fontWeight: '500',
-    cursor: 'pointer',
+  // Sort dropdown styles
+  sortWrapper: {
+    position: 'relative',
   },
-  confirmApproveBtn: {
-    padding: '10px 20px',
-    backgroundColor: '#10B981',
-    color: '#FFFFFF',
-    border: 'none',
+  sortDropdown: {
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    marginTop: '4px',
+    minWidth: '180px',
+    backgroundColor: '#fff',
+    border: '1px solid #e1e3e5',
     borderRadius: '8px',
-    fontSize: '14px',
-    fontWeight: '500',
-    cursor: 'pointer',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    zIndex: 100,
+    overflow: 'hidden',
   },
-  confirmRejectBtn: {
-    padding: '10px 20px',
-    backgroundColor: '#EF4444',
-    color: '#FFFFFF',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '14px',
-    fontWeight: '500',
+  sortOption: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '8px 12px',
+    fontSize: '13px',
+    color: '#303030',
     cursor: 'pointer',
-  },
-  confirmReceiptBtn: {
-    padding: '10px 20px',
-    backgroundColor: '#3B82F6',
-    color: '#FFFFFF',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '14px',
-    fontWeight: '500',
-    cursor: 'pointer',
+    transition: 'background-color 0.15s',
   },
 };
 
