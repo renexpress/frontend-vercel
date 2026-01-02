@@ -5,6 +5,7 @@ function Layout({ children, setIsAuthenticated }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [hovered, setHovered] = useState(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
@@ -15,6 +16,13 @@ function Layout({ children, setIsAuthenticated }) {
       return item.subs.some(sub => location.pathname === sub.path || location.pathname.startsWith(sub.path + '/'));
     }
     return false;
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('user');
+    setIsAuthenticated(false);
+    navigate('/login');
   };
 
   const c = '#303030';
@@ -203,8 +211,85 @@ function Layout({ children, setIsAuthenticated }) {
           <span style={{ background: '#4a4a4a', color: '#909090', fontSize: 11, padding: '2px 6px', borderRadius: 4 }}>⌘</span>
           <span style={{ background: '#4a4a4a', color: '#909090', fontSize: 11, padding: '2px 6px', borderRadius: 4 }}>K</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 6, background: '#36b37e', color: '#fff', fontSize: 10, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>RE</div>
+        <div style={{ position: 'relative' }}>
+          <div
+            onClick={() => setShowUserMenu(!showUserMenu)}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              background: '#36b37e',
+              color: '#fff',
+              fontSize: 12,
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'transform 0.15s ease',
+              transform: showUserMenu ? 'scale(0.95)' : 'scale(1)',
+            }}
+          >
+            RE
+          </div>
+
+          {/* User Dropdown Menu */}
+          {showUserMenu && (
+            <>
+              {/* Backdrop to close menu */}
+              <div
+                onClick={() => setShowUserMenu(false)}
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  zIndex: 99,
+                }}
+              />
+              <div style={{
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                right: 0,
+                width: 200,
+                backgroundColor: '#fff',
+                borderRadius: 10,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                border: '1px solid #e1e3e5',
+                overflow: 'hidden',
+                zIndex: 100,
+              }}>
+                <div style={{
+                  padding: '12px 14px',
+                  borderBottom: '1px solid #e1e3e5',
+                }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#303030' }}>Renat</div>
+                  <div style={{ fontSize: 12, color: '#6d7175', marginTop: 2 }}>Администратор</div>
+                </div>
+                <div
+                  onClick={handleLogout}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f6f6f7'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '10px 14px',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.15s ease',
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#DE3618" strokeWidth="2">
+                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+                    <polyline points="16,17 21,12 16,7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                  </svg>
+                  <span style={{ fontSize: 13, color: '#DE3618', fontWeight: 500 }}>Выйти</span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
