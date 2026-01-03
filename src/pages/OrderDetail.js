@@ -256,11 +256,10 @@ function OrderDetail() {
   }
   const hasImages = productImages.length > 0;
 
-  // Get all variant attributes from snapshot (most reliable source)
+  // Get variant attributes - use variant_info from API (fetched from DB)
   const variantAttributes = [];
-  // First check snapshot variant_attributes (these are what user actually chose)
-  if (snapshot.variant_attributes && Array.isArray(snapshot.variant_attributes)) {
-    snapshot.variant_attributes.forEach(attr => {
+  if (order.variant_info?.attributes && Array.isArray(order.variant_info.attributes)) {
+    order.variant_info.attributes.forEach(attr => {
       variantAttributes.push({
         name: attr.name,
         value: attr.value,
@@ -268,30 +267,15 @@ function OrderDetail() {
       });
     });
   }
-  // Also add regular product attributes from snapshot
-  if (snapshot.attributes && Array.isArray(snapshot.attributes)) {
-    snapshot.attributes.forEach(attr => {
-      // Don't duplicate if already added from variant_attributes
-      if (!variantAttributes.find(v => v.name === attr.name)) {
-        variantAttributes.push({
-          name: attr.name,
-          value: attr.value,
-          hexCode: null,
-        });
-      }
+  // Fallback to snapshot if no variant_info
+  if (variantAttributes.length === 0 && snapshot.variant_attributes && Array.isArray(snapshot.variant_attributes)) {
+    snapshot.variant_attributes.forEach(attr => {
+      variantAttributes.push({
+        name: attr.name,
+        value: attr.value,
+        hexCode: attr.hex_code || null,
+      });
     });
-  }
-  // Fallback to individual order fields if no snapshot data
-  if (variantAttributes.length === 0) {
-    if (order.color_name) {
-      variantAttributes.push({ name: 'Цвет', value: order.color_name, hexCode: order.color_hex });
-    }
-    if (order.size_name) {
-      variantAttributes.push({ name: 'Размер', value: order.size_name, hexCode: null });
-    }
-    if (order.variant_name) {
-      variantAttributes.push({ name: 'Вариант', value: order.variant_name, hexCode: null });
-    }
   }
 
   // Get product ID from snapshot or order
