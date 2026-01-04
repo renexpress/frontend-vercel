@@ -198,11 +198,42 @@ function ProductDetail() {
   const [categoryPath, setCategoryPath] = useState([]);
   const [currentCategories, setCurrentCategories] = useState([]);
   const [categorySearch, setCategorySearch] = useState(''); // Search input
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
 
   useEffect(() => {
     fetchCategories();
     fetchProduct();
+    fetchReviews();
   }, [id]);
+
+  const fetchReviews = async () => {
+    setReviewsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/reviews/product/${id}/`);
+      const data = await res.json();
+      if (data.success) {
+        setReviews(data.reviews || []);
+      }
+    } catch (err) {
+      console.error('Error fetching reviews:', err);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const deleteReview = async (reviewId) => {
+    if (!window.confirm('Удалить этот отзыв?')) return;
+    try {
+      const res = await fetch(`${API_URL}/reviews/${reviewId}/delete/`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setReviews(reviews.filter(r => r.id !== reviewId));
+      }
+    } catch (err) {
+      console.error('Error deleting review:', err);
+    }
+  };
 
   const fetchProduct = async () => {
     try {
@@ -1830,6 +1861,63 @@ function ProductDetail() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Reviews Section */}
+      <div style={{...styles.card, marginTop: '16px'}}>
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px'}}>
+          <span style={styles.label}>Отзывы ({reviews.length})</span>
+        </div>
+        {reviewsLoading ? (
+          <div style={{padding: '20px', textAlign: 'center', color: '#6d7175'}}>Загрузка отзывов...</div>
+        ) : reviews.length === 0 ? (
+          <div style={{padding: '20px', textAlign: 'center', color: '#6d7175', fontSize: '13px'}}>Пока нет отзывов</div>
+        ) : (
+          <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+            {reviews.map((review) => (
+              <div key={review.id} style={{
+                padding: '12px',
+                backgroundColor: '#f9fafb',
+                borderRadius: '8px',
+                border: '1px solid #e5e7eb',
+              }}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px'}}>
+                  <div>
+                    <div style={{fontWeight: 600, fontSize: '14px', color: '#202223'}}>{review.client_name}</div>
+                    <div style={{fontSize: '12px', color: '#6d7175'}}>{review.client_username}</div>
+                  </div>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                    <div style={{display: 'flex', gap: '2px'}}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <span key={star} style={{color: star <= review.rating ? '#F59E0B' : '#E5E7EB', fontSize: '14px'}}>★</span>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => deleteReview(review.id)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: '#d72c0d',
+                        fontSize: '14px',
+                        padding: '4px',
+                      }}
+                      title="Удалить отзыв"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+                {review.comment && (
+                  <div style={{fontSize: '13px', color: '#374151', lineHeight: '1.5'}}>{review.comment}</div>
+                )}
+                <div style={{fontSize: '11px', color: '#9ca3af', marginTop: '8px'}}>
+                  {new Date(review.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Error message */}
