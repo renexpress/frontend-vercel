@@ -19,6 +19,8 @@ function ProductDetail() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [originalData, setOriginalData] = useState(null);
+  const [sku, setSku] = useState('');
+  const [skuCopied, setSkuCopied] = useState(false);
 
   // Price state
   const [retailPrice, setRetailPrice] = useState('');
@@ -224,6 +226,7 @@ function ProductDetail() {
 
       // Fill form with product data
       setTitle(data.name || '');
+      setSku(data.sku || '');
       setDescription(data.description || '');
       // Load characteristics from characteristics_list array
       if (data.characteristics_list && data.characteristics_list.length > 0) {
@@ -824,6 +827,26 @@ function ProductDetail() {
                   cursor: !isEditMode ? 'default' : 'text',
                 }}
               />
+              {/* SKU Display */}
+              {sku && (
+                <div
+                  style={styles.skuContainer}
+                  onClick={() => {
+                    navigator.clipboard.writeText(sku);
+                    setSkuCopied(true);
+                    setTimeout(() => setSkuCopied(false), 2000);
+                  }}
+                  title="Нажмите, чтобы скопировать"
+                >
+                  <span style={styles.skuLabel}>Артикул:</span>
+                  <span style={styles.skuValue}>{sku}</span>
+                  <svg width="14" height="14" viewBox="0 0 20 20" fill="#8c9196" style={{ marginLeft: 4 }}>
+                    <path d="M8 4a2 2 0 00-2 2v10a2 2 0 002 2h6a2 2 0 002-2V6a2 2 0 00-2-2H8zm0-2h6a4 4 0 014 4v10a4 4 0 01-4 4H8a4 4 0 01-4-4V6a4 4 0 014-4z"/>
+                    <path d="M4 8a2 2 0 012-2h1v2H6v8h5v1a1 1 0 01-1 1H5a1 1 0 01-1-1V8z"/>
+                  </svg>
+                  {skuCopied && <span style={styles.skuCopiedText}>Скопировано!</span>}
+                </div>
+              )}
             </div>
 
             {/* Description */}
@@ -2153,6 +2176,12 @@ const styles = {
   modalActions: { display: 'flex', justifyContent: 'flex-end', gap: '8px' },
   modalCancelBtn: { padding: '8px 16px', fontSize: '13px', color: '#202223', backgroundColor: '#fff', border: '1px solid #c9cccf', borderRadius: '6px', cursor: 'pointer' },
   modalDeleteBtn: { padding: '8px 16px', fontSize: '13px', fontWeight: '600', color: '#fff', backgroundColor: '#d72c0d', border: 'none', borderRadius: '6px', cursor: 'pointer' },
+
+  // SKU styles
+  skuContainer: { display: 'flex', alignItems: 'center', marginTop: '8px', padding: '4px 8px', backgroundColor: '#f6f6f7', borderRadius: '4px', cursor: 'pointer', width: 'fit-content' },
+  skuLabel: { fontSize: '12px', color: '#6d7175', marginRight: '4px' },
+  skuValue: { fontSize: '12px', color: '#303030', fontFamily: 'monospace' },
+  skuCopiedText: { fontSize: '11px', color: '#008060', marginLeft: '8px' },
 };
 
 export default ProductDetail;
