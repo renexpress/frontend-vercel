@@ -113,13 +113,25 @@ function Dashboard() {
     fetchDashboardData();
   }, []);
 
+  // Helper function to extract array from API response
+  const extractArray = (data) => {
+    if (Array.isArray(data)) return data;
+    if (data?.results && Array.isArray(data.results)) return data.results;
+    return [];
+  };
+
   const fetchDashboardData = async () => {
     try {
-      const [ordersRes, clientsRes, productsRes] = await Promise.all([
+      const [ordersData, clientsData, productsData] = await Promise.all([
         fetch(`${API_URL}/orders/`).then(r => r.json()),
         fetch(`${API_URL}/clients/`).then(r => r.json()),
         fetch(`${API_URL}/products/`).then(r => r.json()),
       ]);
+
+      // Extract arrays from potentially wrapped responses
+      const ordersRes = extractArray(ordersData);
+      const clientsRes = extractArray(clientsData);
+      const productsRes = extractArray(productsData);
 
       const pendingStatuses = ['awaiting_payment'];
       const processingStatuses = ['istanbul_warehouse', 'to_moscow', 'moscow_warehouse', 'to_address'];

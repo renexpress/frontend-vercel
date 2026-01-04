@@ -35,6 +35,14 @@ function Statistics() {
     fetchAllData();
   }, []);
 
+  // Helper function to extract array from API response
+  const extractArray = (data, key) => {
+    if (Array.isArray(data)) return data;
+    if (data?.results && Array.isArray(data.results)) return data.results;
+    if (key && data?.[key] && Array.isArray(data[key])) return data[key];
+    return [];
+  };
+
   const fetchAllData = async () => {
     try {
       const [ordersRes, productsRes, clientsRes, categoriesRes] = await Promise.all([
@@ -44,10 +52,10 @@ function Statistics() {
         fetch(`${API_URL}/categories/`).then(r => r.json()).catch(() => []),
       ]);
 
-      setOrders(Array.isArray(ordersRes) ? ordersRes : []);
-      setProducts(Array.isArray(productsRes) ? productsRes : []);
-      setClients(Array.isArray(clientsRes) ? clientsRes : []);
-      setCategories(Array.isArray(categoriesRes) ? categoriesRes : []);
+      setOrders(extractArray(ordersRes, 'orders'));
+      setProducts(extractArray(productsRes, 'products'));
+      setClients(extractArray(clientsRes, 'clients'));
+      setCategories(extractArray(categoriesRes, 'categories'));
       setLastRefreshed(new Date());
     } catch (error) {
       console.error('Error fetching data:', error);
