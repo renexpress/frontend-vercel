@@ -6,7 +6,7 @@ function AddProduct() {
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [characteristics, setCharacteristics] = useState('');
+  const [characteristicsList, setCharacteristicsList] = useState([{ name: '', value: '' }]);
   const [images, setImages] = useState([]);
   const [focusedField, setFocusedField] = useState(null);
   const [hoveredField, setHoveredField] = useState(null);
@@ -119,6 +119,28 @@ function AddProduct() {
     setShowVariantForm(false);
     setVariantOptions([{ name: '', values: [''] }]);
     setSelectedColors([]);
+  };
+
+  // Characteristics management functions
+  const addCharacteristic = () => {
+    setCharacteristicsList([...characteristicsList, { name: '', value: '' }]);
+  };
+
+  const removeCharacteristic = (index) => {
+    const newList = characteristicsList.filter((_, i) => i !== index);
+    setCharacteristicsList(newList.length ? newList : [{ name: '', value: '' }]);
+  };
+
+  const updateCharacteristicName = (index, name) => {
+    const newList = [...characteristicsList];
+    newList[index].name = name;
+    setCharacteristicsList(newList);
+  };
+
+  const updateCharacteristicValue = (index, value) => {
+    const newList = [...characteristicsList];
+    newList[index].value = value;
+    setCharacteristicsList(newList);
   };
 
   const packages = [
@@ -457,11 +479,16 @@ function AddProduct() {
       // Upload images first
       const imageUrls = await uploadImages();
 
+      // Build characteristics data (filter out empty ones)
+      const characteristicsData = characteristicsList
+        .filter(c => c.name.trim() && c.value.trim())
+        .map(c => ({ name: c.name.trim(), value: c.value.trim() }));
+
       // Build product data with all fields
       const productData = {
         name: title.trim(),
         description: description.trim() || null,
-        characteristics: characteristics.trim() || null,
+        characteristics_data: characteristicsData.length > 0 ? characteristicsData : null,
         category: selectedCategory?.id || null,
         status: saveAsDraft ? 'draft' : status,
         retail_price: retailPrice ? parseFloat(retailPrice) : null,
@@ -585,22 +612,76 @@ function AddProduct() {
             {/* Characteristics */}
             <div style={styles.section}>
               <label style={styles.label}>Характеристики</label>
-              <textarea
-                value={characteristics}
-                onChange={(e) => setCharacteristics(e.target.value)}
-                onFocus={() => setFocusedField('characteristics')}
-                onBlur={() => setFocusedField(null)}
-                onMouseEnter={() => setHoveredField('characteristics')}
-                onMouseLeave={() => setHoveredField(null)}
-                placeholder="Материал: 100% хлопок&#10;Страна: Турция&#10;Сезон: Лето"
-                rows={4}
-                style={{
-                  ...styles.textarea,
-                  borderColor: focusedField === 'characteristics' ? '#5c6ac4' : hoveredField === 'characteristics' ? '#6d7175' : '#919eab',
-                  backgroundColor: hoveredField === 'characteristics' && focusedField !== 'characteristics' ? '#fafbfc' : '#fff',
-                  boxShadow: focusedField === 'characteristics' ? '0 0 0 2px #5c6ac433' : 'inset 0 1px 2px rgba(0,0,0,0.1)',
-                }}
-              />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {characteristicsList.map((char, index) => (
+                  <div key={index} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      value={char.name}
+                      onChange={(e) => updateCharacteristicName(index, e.target.value)}
+                      placeholder="Название (напр. Материал)"
+                      style={{
+                        ...styles.input,
+                        flex: 1,
+                        borderColor: focusedField === `char-name-${index}` ? '#5c6ac4' : '#919eab',
+                        boxShadow: focusedField === `char-name-${index}` ? '0 0 0 2px #5c6ac433' : 'inset 0 1px 2px rgba(0,0,0,0.1)',
+                      }}
+                      onFocus={() => setFocusedField(`char-name-${index}`)}
+                      onBlur={() => setFocusedField(null)}
+                    />
+                    <input
+                      type="text"
+                      value={char.value}
+                      onChange={(e) => updateCharacteristicValue(index, e.target.value)}
+                      placeholder="Значение (напр. Хлопок)"
+                      style={{
+                        ...styles.input,
+                        flex: 1,
+                        borderColor: focusedField === `char-value-${index}` ? '#5c6ac4' : '#919eab',
+                        boxShadow: focusedField === `char-value-${index}` ? '0 0 0 2px #5c6ac433' : 'inset 0 1px 2px rgba(0,0,0,0.1)',
+                      }}
+                      onFocus={() => setFocusedField(`char-value-${index}`)}
+                      onBlur={() => setFocusedField(null)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeCharacteristic(index)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '8px',
+                        color: '#bf0711',
+                        fontSize: '18px',
+                        borderRadius: '4px',
+                      }}
+                      title="Удалить"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addCharacteristic}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 12px',
+                    background: 'none',
+                    border: '1px dashed #919eab',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    color: '#5c6ac4',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    alignSelf: 'flex-start',
+                  }}
+                >
+                  <span style={{ fontSize: '16px' }}>+</span> Добавить характеристику
+                </button>
+              </div>
             </div>
 
             {/* Media */}
