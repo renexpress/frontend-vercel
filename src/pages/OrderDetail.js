@@ -4,9 +4,14 @@ import API_URL from '../config/api';
 
 const STATUS_LABELS = {
   awaiting_payment: 'Ожидает оплаты',
+  accepted: 'Принято',
   istanbul_warehouse: 'На складе в Стамбуле',
+  warehouse: 'На складе',
   to_moscow: 'В дороге до Москвы',
+  in_transit: 'В дороге',
   moscow_warehouse: 'На складе в Москве',
+  moscow: 'Москва',
+  istanbul: 'Стамбул',
   to_address: 'В дороге до адреса',
   delivered: 'Доставлен',
   cancelled: 'Отменён',
@@ -14,12 +19,21 @@ const STATUS_LABELS = {
 
 const STATUSES = [
   { key: 'awaiting_payment', label: 'Ожидает оплаты' },
+  { key: 'accepted', label: 'Принято' },
   { key: 'istanbul_warehouse', label: 'Склад Стамбул' },
   { key: 'to_moscow', label: 'В пути до Москвы' },
   { key: 'moscow_warehouse', label: 'Склад Москва' },
   { key: 'to_address', label: 'Доставка' },
   { key: 'delivered', label: 'Доставлен' },
 ];
+
+// Map alternative/legacy status values to main timeline statuses
+const STATUS_MAPPING = {
+  warehouse: 'istanbul_warehouse',
+  istanbul: 'istanbul_warehouse',
+  in_transit: 'to_moscow',
+  moscow: 'moscow_warehouse',
+};
 
 function OrderDetail() {
   const { id } = useParams();
@@ -32,6 +46,7 @@ function OrderDetail() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [history, setHistory] = useState([]);
+  const [fullScreenImage, setFullScreenImage] = useState(null);
 
   useEffect(() => { loadOrder(); }, [id]);
   useEffect(() => { if (order) loadOrderHistory(); }, [order]);
@@ -97,7 +112,10 @@ function OrderDetail() {
   const formatDate = (ds) => ds ? new Date(ds).toLocaleDateString('ru-RU') : '—';
   const formatDateTime = (ds) => ds ? new Date(ds).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
   const formatMoney = (a) => a ? Number(a).toLocaleString('ru-RU') + ' ₽' : '—';
-  const getStatusIndex = (s) => STATUSES.findIndex(st => st.key === s);
+  const getStatusIndex = (s) => {
+    const mapped = STATUS_MAPPING[s] || s;
+    return STATUSES.findIndex(st => st.key === mapped);
+  };
 
   if (loading) return <div style={styles.page}><div style={styles.loading}>Загрузка...</div></div>;
   if (!order) return <div style={styles.page}><div style={styles.card}><p>Заказ не найден</p></div></div>;
@@ -287,9 +305,13 @@ function OrderDetail() {
                     {item.photos && item.photos.length > 0 && (
                       <div style={styles.historyPhotos}>
                         {item.photos.map((photo, photoIdx) => (
-                          <a key={photoIdx} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
-                            <img src={photo.photo_url} alt={`Photo ${photoIdx + 1}`} style={styles.historyPhotoImg} />
-                          </a>
+                          <img
+                            key={photoIdx}
+                            src={photo.photo_url}
+                            alt={`Photo ${photoIdx + 1}`}
+                            style={styles.historyPhotoImg}
+                            onClick={() => setFullScreenImage(photo.photo_url)}
+                          />
                         ))}
                       </div>
                     )}
@@ -352,6 +374,13 @@ function OrderDetail() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {fullScreenImage && (
+        <div style={styles.fullScreenOverlay} onClick={() => setFullScreenImage(null)}>
+          <button style={styles.fullScreenCloseBtn} onClick={() => setFullScreenImage(null)}>&times;</button>
+          <img src={fullScreenImage} alt="Full size" style={styles.fullScreenImg} onClick={e => e.stopPropagation()} />
         </div>
       )}
     </div>
@@ -451,6 +480,10 @@ const styles = {
   modalActions: { display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 },
   modalCancelBtn: { padding: '6px 12px', backgroundColor: '#f3f4f6', border: '1px solid #e5e7eb', borderRadius: 6, fontSize: 13, cursor: 'pointer' },
   modalConfirmBtn: { padding: '6px 12px', backgroundColor: '#dc2626', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer' },
+
+  fullScreenOverlay: { position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 },
+  fullScreenCloseBtn: { position: 'absolute', top: 20, right: 20, width: 44, height: 44, borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.2)', border: 'none', fontSize: 28, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  fullScreenImg: { maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 8 },
 };
 
 export default OrderDetail;

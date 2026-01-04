@@ -84,6 +84,7 @@ function Orders() {
   const tabs = [
     { id: 'all', label: 'Все' },
     { id: 'awaiting_payment', label: 'Ожидает оплаты' },
+    { id: 'accepted', label: 'Принято' },
     { id: 'istanbul_warehouse', label: 'На складе в Стамбуле' },
     { id: 'to_moscow', label: 'В дороге до Москвы' },
     { id: 'moscow_warehouse', label: 'На складе в Москве' },
@@ -93,9 +94,14 @@ function Orders() {
 
   const statusConfig = {
     awaiting_payment: { label: 'Ожидает оплаты', bg: '#fef3c7', color: '#92400e' },
+    accepted: { label: 'Принято', bg: '#d1fae5', color: '#065f46' },
     istanbul_warehouse: { label: 'На складе в Стамбуле', bg: '#fce7f3', color: '#9d174d' },
+    warehouse: { label: 'На складе', bg: '#dbeafe', color: '#1d4ed8' },
     to_moscow: { label: 'В дороге до Москвы', bg: '#dbeafe', color: '#1d4ed8' },
+    in_transit: { label: 'В дороге', bg: '#dbeafe', color: '#1d4ed8' },
     moscow_warehouse: { label: 'На складе в Москве', bg: '#cffafe', color: '#0e7490' },
+    moscow: { label: 'Москва', bg: '#cffafe', color: '#0e7490' },
+    istanbul: { label: 'Стамбул', bg: '#fce7f3', color: '#9d174d' },
     to_address: { label: 'В дороге до вашего адреса', bg: '#e0e7ff', color: '#3730a3' },
     delivered: { label: 'Доставлен', bg: '#d1fae5', color: '#065f46' },
     cancelled: { label: 'Отменён', bg: '#fee2e2', color: '#991b1b' },
