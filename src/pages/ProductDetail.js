@@ -621,19 +621,43 @@ function ProductDetail() {
     }
   };
 
-  // Delete product
+  // Soft delete product (marks as deleted but keeps in database for order history)
   const handleDelete = async () => {
     try {
-      const res = await fetch(`${API_URL}/products/${id}/`, {
-        method: 'DELETE',
+      const res = await fetch(`${API_URL}/products/${id}/soft_delete/`, {
+        method: 'POST',
       });
-      if (res.ok) {
+      const data = await res.json();
+      if (data.success) {
         navigate('/products');
       } else {
-        setError('Ошибка при удалении товара');
+        setError(data.error || 'Ошибка при удалении товара');
       }
     } catch (err) {
       setError('Ошибка сети: ' + err.message);
+    }
+  };
+
+  // Restore deleted product
+  const handleRestore = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_URL}/products/${id}/restore/`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStatus('active');
+        setIsEditMode(false);
+        setOriginalData(prev => prev ? { ...prev, status: 'active' } : null);
+      } else {
+        setError(data.error || 'Ошибка при восстановлении товара');
+      }
+    } catch (err) {
+      setError('Ошибка сети: ' + err.message);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -740,7 +764,7 @@ function ProductDetail() {
           <div style={styles.modal} onClick={e => e.stopPropagation()}>
             <h3 style={styles.modalTitle}>Удалить товар?</h3>
             <p style={styles.modalText}>
-              Вы уверены, что хотите удалить "{title}"? Это действие нельзя отменить.
+              Товар "{title}" будет перемещён в удалённые. Вы сможете восстановить его позже из раздела "Удалённые".
             </p>
             <div style={styles.modalActions}>
               <button
@@ -1568,14 +1592,14 @@ function ProductDetail() {
               <div
                 style={{
                   ...styles.statusBtn,
-                  backgroundColor: !isEditMode ? '#f6f6f7' : (hoveredField === 'status' ? '#f6f6f7' : '#fff'),
-                  cursor: !isEditMode ? 'default' : 'pointer',
+                  backgroundColor: (!isEditMode || status === 'deleted') ? '#f6f6f7' : (hoveredField === 'status' ? '#f6f6f7' : '#fff'),
+                  cursor: (!isEditMode || status === 'deleted') ? 'default' : 'pointer',
                 }}
-                onClick={() => isEditMode && setStatusOpen(!statusOpen)}
+                onClick={() => isEditMode && status !== 'deleted' && setStatusOpen(!statusOpen)}
                 onMouseEnter={() => setHoveredField('status')}
                 onMouseLeave={() => setHoveredField(null)}
               >
-                <span>{status === 'active' ? 'Активен' : 'Черновик'}</span>
+                <span>{status === 'active' ? 'Активен' : status === 'deleted' ? 'Удалён' : status === 'archived' ? 'Архив' : 'Черновик'}</span>
                 <svg width="12" height="12" viewBox="0 0 20 20" fill="#5c5f62">
                   <path d="M10 14l-4-4h8l-4 4z"/>
                 </svg>
@@ -1799,13 +1823,24 @@ function ProductDetail() {
       <div style={styles.bottomBar}>
         {isEditMode ? (
           <>
-            <button
-              type="button"
-              style={styles.deleteProductBtn}
-              onClick={() => setShowDeleteConfirm(true)}
-            >
-              Удалить
-            </button>
+            {status === 'deleted' ? (
+              <button
+                type="button"
+                style={styles.restoreProductBtn}
+                onClick={handleRestore}
+                disabled={saving}
+              >
+                Восстановить
+              </button>
+            ) : (
+              <button
+                type="button"
+                style={styles.deleteProductBtn}
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                Удалить
+              </button>
+            )}
             <div style={{flex: 1}} />
             <button
               type="button"
@@ -2038,6 +2073,7 @@ const styles = {
   cancelBtn: { padding: '6px 12px', fontSize: '13px', fontWeight: '500', color: '#202223', backgroundColor: '#fff', border: '1px solid #c9cccf', borderRadius: '6px', cursor: 'pointer', boxShadow: '0 1px 0 rgba(0,0,0,0.05), inset 0 -1px 0 rgba(0,0,0,0.1)', transition: 'background-color 0.15s' },
   saveBtn: { padding: '6px 12px', fontSize: '13px', fontWeight: '600', color: '#fff', backgroundColor: '#303030', border: 'none', borderRadius: '6px', cursor: 'pointer', boxShadow: '0 1px 0 rgba(0,0,0,0.05), inset 0 -1px 0 rgba(0,0,0,0.2)', transition: 'background-color 0.15s' },
   deleteProductBtn: { padding: '6px 12px', fontSize: '13px', fontWeight: '500', color: '#d72c0d', backgroundColor: '#fff', border: '1px solid #fcd4d4', borderRadius: '6px', cursor: 'pointer' },
+  restoreProductBtn: { padding: '6px 12px', fontSize: '13px', fontWeight: '500', color: '#0d5c3d', backgroundColor: '#fff', border: '1px solid #aee9d1', borderRadius: '6px', cursor: 'pointer' },
   backBtn: { padding: '6px 12px', fontSize: '13px', fontWeight: '500', color: '#5c5f62', backgroundColor: '#fff', border: '1px solid #c9cccf', borderRadius: '6px', cursor: 'pointer', boxShadow: '0 1px 0 rgba(0,0,0,0.05), inset 0 -1px 0 rgba(0,0,0,0.1)', transition: 'background-color 0.15s' },
   editBtn: { padding: '6px 16px', fontSize: '13px', fontWeight: '600', color: '#fff', backgroundColor: '#2c6ecb', border: 'none', borderRadius: '6px', cursor: 'pointer', boxShadow: '0 1px 0 rgba(0,0,0,0.05), inset 0 -1px 0 rgba(0,0,0,0.2)', transition: 'background-color 0.15s' },
   draftBtn: { padding: '6px 12px', fontSize: '13px', fontWeight: '500', color: '#6d7175', backgroundColor: '#fff', border: '1px solid #c9cccf', borderRadius: '6px', cursor: 'pointer', marginRight: '8px', boxShadow: '0 1px 0 rgba(0,0,0,0.05), inset 0 -1px 0 rgba(0,0,0,0.1)', transition: 'background-color 0.15s' },

@@ -70,7 +70,8 @@ function Products() {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch(`${API_URL}/products/`);
+      // Use show_all=true to get all products including deleted for CRM
+      const res = await fetch(`${API_URL}/products/?show_all=true`);
       const data = await res.json();
       // Handle both array response and {products: [...]} response
       if (Array.isArray(data)) {
@@ -89,11 +90,32 @@ function Products() {
     }
   };
 
+  const handleRestore = async (productId, e) => {
+    e.stopPropagation();
+    try {
+      const res = await fetch(`${API_URL}/products/${productId}/restore/`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Update local state
+        setProducts(prev => prev.map(p =>
+          p.id === productId ? { ...p, status: 'active' } : p
+        ));
+      }
+    } catch (error) {
+      console.error('Error restoring product:', error);
+    }
+  };
+
   const filteredProducts = products.filter(product => {
     // Tab filter
     if (activeTab === 'active' && product.status !== 'active' && product.status) return false;
     if (activeTab === 'draft' && product.status !== 'draft') return false;
     if (activeTab === 'archived' && product.status !== 'archived') return false;
+    if (activeTab === 'deleted' && product.status !== 'deleted') return false;
+    // Hide deleted from 'all' tab - they should only show in deleted tab
+    if (activeTab === 'all' && product.status === 'deleted') return false;
 
     // Search filter
     if (searchQuery.trim()) {
@@ -173,6 +195,7 @@ function Products() {
     { id: 'active', label: 'Активные' },
     { id: 'draft', label: 'Черновики' },
     { id: 'archived', label: 'Архив' },
+    { id: 'deleted', label: 'Удалённые' },
   ];
 
   if (loading) {
@@ -385,9 +408,29 @@ function Products() {
                     <span style={styles.skuText}>{product.sku || '—'}</span>
                   </td>
                   <td style={styles.td}>
-                    <span style={product.status === 'draft' ? styles.badgeDraft : styles.badgeActive}>
-                      {product.status === 'draft' ? 'Черновик' : 'Активен'}
-                    </span>
+                    <div style={styles.statusCell}>
+                      <span style={
+                        product.status === 'draft' ? styles.badgeDraft :
+                        product.status === 'deleted' ? styles.badgeDeleted :
+                        product.status === 'archived' ? styles.badgeArchived :
+                        styles.badgeActive
+                      }>
+                        {product.status === 'draft' ? 'Черновик' :
+                         product.status === 'deleted' ? 'Удалён' :
+                         product.status === 'archived' ? 'Архив' :
+                         'Активен'}
+                      </span>
+                      {product.status === 'deleted' && (
+                        <button
+                          style={styles.restoreBtn}
+                          onClick={(e) => handleRestore(product.id, e)}
+                          onMouseEnter={() => setHoveredBtn(`restore-${product.id}`)}
+                          onMouseLeave={() => setHoveredBtn(null)}
+                        >
+                          Восстановить
+                        </button>
+                      )}
+                    </div>
                   </td>
                   <td style={{
                     ...styles.td,
@@ -610,6 +653,40 @@ const styles = {
     borderRadius: '10px',
     fontSize: '12px',
     fontWeight: '500',
+  },
+  badgeDeleted: {
+    display: 'inline-block',
+    padding: '2px 8px',
+    backgroundColor: '#ffd79d',
+    color: '#7a4f01',
+    borderRadius: '10px',
+    fontSize: '12px',
+    fontWeight: '500',
+  },
+  badgeArchived: {
+    display: 'inline-block',
+    padding: '2px 8px',
+    backgroundColor: '#d3d3ff',
+    color: '#4a4a9e',
+    borderRadius: '10px',
+    fontSize: '12px',
+    fontWeight: '500',
+  },
+  statusCell: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  restoreBtn: {
+    padding: '2px 8px',
+    backgroundColor: '#fff',
+    border: '1px solid #c9cccf',
+    borderRadius: '6px',
+    fontSize: '11px',
+    fontWeight: '500',
+    color: '#303030',
+    cursor: 'pointer',
+    transition: 'all 0.15s',
   },
 
   empty: {
