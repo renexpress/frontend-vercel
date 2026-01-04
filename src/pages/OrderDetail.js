@@ -50,9 +50,10 @@ function OrderDetail() {
 
   const loadOrderHistory = async () => {
     try {
-      const response = await fetch(`${API_URL}/orders/${id}/history/`);
+      // Use order detail endpoint which includes history with photos
+      const response = await fetch(`${API_URL}/orders/detail/${id}/`);
       const data = await response.json();
-      if (data.success) setHistory(data.history);
+      if (data.success && data.history) setHistory(data.history);
     } catch (err) {}
   };
 
@@ -258,18 +259,40 @@ function OrderDetail() {
             )}
           </div>
 
-          {/* History */}
+          {/* History with Photos */}
           {history.length > 0 && (
             <div style={styles.card}>
-              <div style={styles.label}>История</div>
+              <div style={styles.label}>История статусов</div>
               <div style={styles.historyList}>
                 {history.map((item, idx) => (
-                  <div key={idx} style={styles.historyItem}>
-                    <span style={styles.historyDot} />
-                    <div style={styles.historyContent}>
-                      <span style={styles.historyTitle}>{item.from_status_display || 'Создан'} → {item.to_status_display}</span>
-                      <span style={styles.historyTime}>{formatDateTime(item.created_at)}</span>
+                  <div key={idx} style={styles.historyItemFull}>
+                    <div style={styles.historyItemHeader}>
+                      <span style={styles.historyDot} />
+                      <div style={styles.historyContent}>
+                        <span style={styles.historyTitle}>{item.from_status_display || 'Создан'} → {item.to_status_display}</span>
+                        <span style={styles.historyTime}>{formatDateTime(item.created_at)}</span>
+                      </div>
                     </div>
+                    {item.employee_name && (
+                      <div style={styles.historyEmployee}>
+                        Сотрудник: {item.employee_name}
+                      </div>
+                    )}
+                    {item.notes && (
+                      <div style={styles.historyNotes}>
+                        <span style={styles.historyNotesLabel}>Комментарий:</span>
+                        <span style={styles.historyNotesText}>{item.notes}</span>
+                      </div>
+                    )}
+                    {item.photos && item.photos.length > 0 && (
+                      <div style={styles.historyPhotos}>
+                        {item.photos.map((photo, photoIdx) => (
+                          <a key={photoIdx} href={photo.photo_url} target="_blank" rel="noopener noreferrer">
+                            <img src={photo.photo_url} alt={`Photo ${photoIdx + 1}`} style={styles.historyPhotoImg} />
+                          </a>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -395,12 +418,19 @@ const styles = {
   commentBlock: { marginTop: 12, padding: '8px 10px', backgroundColor: '#fffbeb', borderRadius: 6, border: '1px solid #fef3c7' },
   commentText: { fontSize: 13, color: '#92400e' },
 
-  historyList: { display: 'flex', flexDirection: 'column', gap: 8 },
-  historyItem: { display: 'flex', alignItems: 'flex-start', gap: 8 },
-  historyDot: { width: 8, height: 8, borderRadius: '50%', backgroundColor: '#2563eb', marginTop: 4 },
+  historyList: { display: 'flex', flexDirection: 'column', gap: 16 },
+  historyItemFull: { borderBottom: '1px solid #f3f4f6', paddingBottom: 12 },
+  historyItemHeader: { display: 'flex', alignItems: 'flex-start', gap: 8 },
+  historyDot: { width: 10, height: 10, borderRadius: '50%', backgroundColor: '#2563eb', marginTop: 4, flexShrink: 0 },
   historyContent: { flex: 1, display: 'flex', justifyContent: 'space-between' },
-  historyTitle: { fontSize: 12, color: '#374151' },
+  historyTitle: { fontSize: 13, color: '#374151', fontWeight: 500 },
   historyTime: { fontSize: 11, color: '#9ca3af' },
+  historyEmployee: { marginLeft: 18, marginTop: 4, fontSize: 12, color: '#6b7280' },
+  historyNotes: { marginLeft: 18, marginTop: 8, padding: '8px 12px', backgroundColor: '#f9fafb', borderRadius: 6 },
+  historyNotesLabel: { fontSize: 11, color: '#6b7280', display: 'block', marginBottom: 4 },
+  historyNotesText: { fontSize: 13, color: '#374151', lineHeight: '1.4' },
+  historyPhotos: { marginLeft: 18, marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' },
+  historyPhotoImg: { width: 80, height: 80, borderRadius: 6, objectFit: 'cover', border: '1px solid #e5e7eb', cursor: 'pointer' },
 
   clientInfo: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 },
   clientAvatar: { width: 36, height: 36, borderRadius: 8, backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 600, color: '#6b7280' },
