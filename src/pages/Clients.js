@@ -52,8 +52,30 @@ function Clients() {
         axios.get(`${API_URL}/clients/`),
         axios.get(`${API_URL}/orders/`)
       ]);
-      setClients(clientsRes.data);
-      setOrders(ordersRes.data);
+
+      // Handle different response formats for clients
+      const clientsData = clientsRes.data;
+      if (Array.isArray(clientsData)) {
+        setClients(clientsData);
+      } else if (clientsData.results && Array.isArray(clientsData.results)) {
+        setClients(clientsData.results);
+      } else if (clientsData.clients && Array.isArray(clientsData.clients)) {
+        setClients(clientsData.clients);
+      } else {
+        setClients([]);
+      }
+
+      // Handle different response formats for orders
+      const ordersData = ordersRes.data;
+      if (Array.isArray(ordersData)) {
+        setOrders(ordersData);
+      } else if (ordersData.results && Array.isArray(ordersData.results)) {
+        setOrders(ordersData.results);
+      } else if (ordersData.orders && Array.isArray(ordersData.orders)) {
+        setOrders(ordersData.orders);
+      } else {
+        setOrders([]);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {

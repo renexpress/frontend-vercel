@@ -35,7 +35,18 @@ function ClientDetail() {
       ]);
       setClient(clientRes.data);
       setFormData(clientRes.data);
-      setOrders(ordersRes.data);
+
+      // Handle different response formats for orders
+      const ordersData = ordersRes.data;
+      if (Array.isArray(ordersData)) {
+        setOrders(ordersData);
+      } else if (ordersData.results) {
+        setOrders(ordersData.results);
+      } else if (ordersData.orders) {
+        setOrders(ordersData.orders);
+      } else {
+        setOrders([]);
+      }
 
       // Handle different response formats for products
       const productsData = productsRes.data;
