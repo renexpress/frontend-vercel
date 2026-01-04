@@ -271,7 +271,9 @@ function ProductDetail() {
       setOriginalData({
         title: data.name || '',
         description: data.description || '',
-        characteristics: data.characteristics || '',
+        characteristicsList: data.characteristics_list && data.characteristics_list.length > 0
+          ? data.characteristics_list.map(c => ({ name: c.name, value: c.value }))
+          : [{ name: '', value: '' }],
         status: data.status || 'active',
         retailPrice: data.retail_price || data.price || '',
         wholesalePrice: data.wholesale_price || '',
@@ -640,7 +642,7 @@ function ProductDetail() {
     if (originalData) {
       setTitle(originalData.title);
       setDescription(originalData.description);
-      setCharacteristics(originalData.characteristics);
+      setCharacteristicsList(originalData.characteristicsList || [{ name: '', value: '' }]);
       setStatus(originalData.status);
       setRetailPrice(originalData.retailPrice);
       setWholesalePrice(originalData.wholesalePrice);
