@@ -73,6 +73,11 @@ function Layout({ children, setIsAuthenticated }) {
         <path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/>
       </svg>
     ),
+    support: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill={c}>
+        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+      </svg>
+    ),
     store: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill={c}>
         <path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/>
@@ -95,6 +100,7 @@ function Layout({ children, setIsAuthenticated }) {
     { id: 'orders', path: '/orders', label: 'Заказы', icon: 'orders', subs: [{ label: 'Пошив заказы', path: '/poshiv-orders', icon: 'scissors' }] },
     { id: 'products', path: '/products', label: 'Товары', icon: 'products', subs: [{ label: 'Черновики', path: '/products/drafts', icon: 'draft' }, { label: 'Товары пользователей', path: '/user-products', icon: 'users' }] },
     { id: 'customers', path: '/clients', label: 'Клиенты', icon: 'customers' },
+    { id: 'support', path: '/support', label: 'Поддержка', icon: 'support' },
     { id: 'marketing', path: '/marketing', label: 'Маркетинг', icon: 'marketing' },
     { id: 'discounts', path: '/discounts', label: 'Скидки', icon: 'discounts' },
     { id: 'content', path: '/content', label: 'Контент', icon: 'content' },
