@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import API_URL from '../config/api';
 
 const ROLE_CONFIG = {
@@ -16,6 +17,7 @@ const ROLES = [
 ];
 
 function Employees() {
+  const navigate = useNavigate();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -211,7 +213,10 @@ function Employees() {
 
           return (
             <div key={employee.id} style={styles.card}>
-              <div style={styles.cardHeader}>
+              <div
+                style={styles.cardHeader}
+                onClick={() => navigate(`/employees/${employee.id}`)}
+              >
                 <div style={styles.avatar}>
                   {employee.full_name.charAt(0).toUpperCase()}
                 </div>
@@ -503,6 +508,8 @@ const styles = {
     alignItems: 'center',
     gap: '12px',
     marginBottom: '16px',
+    cursor: 'pointer',
+    transition: 'opacity 0.15s',
   },
   avatar: {
     width: '48px',

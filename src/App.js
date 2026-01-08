@@ -21,6 +21,7 @@ import Schedule from './pages/Schedule';
 import Invoices from './pages/Invoices';
 import Campaigns from './pages/Campaigns';
 import Employees from './pages/Employees';
+import EmployeeDetail from './pages/EmployeeDetail';
 import Marketing from './pages/Marketing';
 import Discounts from './pages/Discounts';
 import Content from './pages/Content';
@@ -217,6 +218,14 @@ function App() {
           element={
             <ProtectedRoute isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated}>
               <Employees />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/employees/:id"
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated}>
+              <EmployeeDetail />
             </ProtectedRoute>
           }
         />
