@@ -93,6 +93,11 @@ function Layout({ children, setIsAuthenticated }) {
         <path d="M19.1 12.9a7 7 0 000-1.8l1.9-1.5c.2-.1.2-.4.1-.6l-1.8-3.1c-.1-.2-.4-.3-.6-.2l-2.2.9a7 7 0 00-1.6-.9l-.3-2.4c0-.2-.3-.4-.5-.4h-3.6c-.3 0-.5.2-.5.4l-.3 2.4c-.6.2-1.1.5-1.6.9l-2.2-.9c-.2-.1-.5 0-.6.2L3 9c-.1.2-.1.5.1.6l1.9 1.5a7 7 0 000 1.8l-1.9 1.5c-.2.1-.2.4-.1.6l1.8 3.1c.1.2.4.3.6.2l2.2-.9c.5.4 1 .7 1.6.9l.3 2.4c0 .2.3.4.5.4h3.6c.3 0 .5-.2.5-.4l.3-2.4c.6-.2 1.1-.5 1.6-.9l2.2.9c.2.1.5 0 .6-.2l1.8-3.1c.1-.2.1-.5-.1-.6l-1.9-1.5zM12 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"/>
       </svg>
     ),
+    employees: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill={c}>
+        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+      </svg>
+    ),
   };
 
   const items = [
@@ -100,6 +105,7 @@ function Layout({ children, setIsAuthenticated }) {
     { id: 'orders', path: '/orders', label: 'Заказы', icon: 'orders', subs: [{ label: 'Пошив заказы', path: '/poshiv-orders', icon: 'scissors' }] },
     { id: 'products', path: '/products', label: 'Товары', icon: 'products', subs: [{ label: 'Черновики', path: '/products/drafts', icon: 'draft' }, { label: 'Товары пользователей', path: '/user-products', icon: 'users' }] },
     { id: 'customers', path: '/clients', label: 'Клиенты', icon: 'customers' },
+    { id: 'employees', path: '/employees', label: 'Сотрудники', icon: 'employees' },
     { id: 'support', path: '/support', label: 'Поддержка', icon: 'support' },
     { id: 'marketing', path: '/marketing', label: 'Маркетинг', icon: 'marketing' },
     { id: 'discounts', path: '/discounts', label: 'Скидки', icon: 'discounts' },
