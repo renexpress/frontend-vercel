@@ -26,6 +26,9 @@ import Marketing from './pages/Marketing';
 import Discounts from './pages/Discounts';
 import Content from './pages/Content';
 import Markets from './pages/Markets';
+import Deliveries from './pages/Deliveries';
+import DeliveryDetail from './pages/DeliveryDetail';
+import Admins from './pages/Admins';
 import Layout from './components/Layout';
 import './App.css';
 
@@ -230,6 +233,14 @@ function App() {
           }
         />
         <Route
+          path="/admins"
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated}>
+              <Admins />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/marketing"
           element={
             <ProtectedRoute isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated}>
@@ -258,6 +269,22 @@ function App() {
           element={
             <ProtectedRoute isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated}>
               <Markets />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/deliveries"
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated}>
+              <Deliveries />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/deliveries/:id"
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated}>
+              <DeliveryDetail />
             </ProtectedRoute>
           }
         />

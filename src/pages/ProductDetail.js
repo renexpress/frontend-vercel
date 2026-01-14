@@ -22,6 +22,17 @@ function ProductDetail() {
   const [sku, setSku] = useState('');
   const [skuCopied, setSkuCopied] = useState(false);
 
+  // User product state
+  const [isUserProduct, setIsUserProduct] = useState(false);
+  const [productStatus, setProductStatus] = useState('');
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+
+  // Quantity tracking for delivery
+  const [quantityToDeliver, setQuantityToDeliver] = useState(0);
+  const [previousQuantity, setPreviousQuantity] = useState(0);
+  const [isNewProduct, setIsNewProduct] = useState(true);
+
   // Price state
   const [retailPrice, setRetailPrice] = useState('');
   const [wholesaleEnabled, setWholesaleEnabled] = useState(false);
@@ -266,6 +277,16 @@ function ProductDetail() {
         setCharacteristicsList([{ name: '', value: '' }]);
       }
       setStatus(data.status || 'active');
+
+      // User product info
+      console.log('Product owner:', data.owner, 'product_status:', data.product_status);
+      setIsUserProduct(!!data.owner);
+      setProductStatus(data.product_status || '');
+
+      // Quantity tracking for delivery
+      setQuantityToDeliver(data.quantity_to_deliver || 0);
+      setPreviousQuantity(data.previous_quantity || 0);
+      setIsNewProduct(data.is_new_product !== false);
 
       // Prices
       setRetailPrice(data.retail_price || data.price || '');
@@ -695,6 +716,78 @@ function ProductDetail() {
     }
   };
 
+  // Approve user product
+  const handleApprove = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_URL}/products/${id}/approve/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (data.success) {
+        navigate('/user-products');
+      } else {
+        setError(data.error || 'Ошибка при одобрении');
+      }
+    } catch (err) {
+      setError('Ошибка сети: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Reject user product
+  const handleReject = async () => {
+    if (!rejectReason.trim()) {
+      setError('Укажите причину отклонения');
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_URL}/products/${id}/reject/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: rejectReason.trim() })
+      });
+      const data = await res.json();
+      if (data.success) {
+        navigate('/user-products');
+      } else {
+        setError(data.error || 'Ошибка при отклонении');
+      }
+    } catch (err) {
+      setError('Ошибка сети: ' + err.message);
+    } finally {
+      setSaving(false);
+      setShowRejectModal(false);
+    }
+  };
+
+  // Confirm receipt of user product (makes it active)
+  const handleConfirmReceipt = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_URL}/products/${id}/confirm_receipt/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (data.success) {
+        navigate('/user-products');
+      } else {
+        setError(data.error || 'Ошибка при подтверждении');
+      }
+    } catch (err) {
+      setError('Ошибка сети: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Cancel edit mode - restore original data
   const handleCancelEdit = () => {
     if (originalData) {
@@ -831,6 +924,50 @@ function ProductDetail() {
         </svg>
         <span style={styles.breadcrumbCurrent}>{title || 'Редактирование'}</span>
       </div>
+
+      {/* Delivery Info Card - for user products */}
+      {isUserProduct && (productStatus === 'pending_approval' || productStatus === 'approved') && (
+        <div style={styles.deliveryInfoCard}>
+          <div style={styles.deliveryInfoHeader}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2">
+              <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
+            <span style={styles.deliveryInfoTitle}>
+              {productStatus === 'pending_approval' ? 'Информация о товаре' : 'Ожидает доставки на склад'}
+            </span>
+          </div>
+          <div style={styles.deliveryInfoContent}>
+            {isNewProduct ? (
+              <div style={styles.deliveryInfoRow}>
+                <span style={styles.deliveryInfoLabel}>Новый товар:</span>
+                <span style={styles.deliveryInfoValue}>{stockQuantity} шт. к сдаче</span>
+              </div>
+            ) : (
+              <>
+                <div style={styles.deliveryInfoRow}>
+                  <span style={styles.deliveryInfoLabel}>Было на складе:</span>
+                  <span style={styles.deliveryInfoValue}>{previousQuantity} шт.</span>
+                </div>
+                <div style={styles.deliveryInfoRow}>
+                  <span style={styles.deliveryInfoLabel}>Новое количество:</span>
+                  <span style={styles.deliveryInfoValue}>{stockQuantity} шт.</span>
+                </div>
+                {quantityToDeliver > 0 && (
+                  <div style={{...styles.deliveryInfoRow, ...styles.deliveryInfoHighlight}}>
+                    <span style={styles.deliveryInfoLabel}>К доставке:</span>
+                    <span style={{...styles.deliveryInfoValue, fontWeight: 700, color: '#1d4ed8'}}>+{quantityToDeliver} шт.</span>
+                  </div>
+                )}
+                {quantityToDeliver === 0 && (
+                  <div style={styles.deliveryInfoRow}>
+                    <span style={{...styles.deliveryInfoLabel, color: '#059669'}}>Доставка не требуется (только изменения)</span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <div style={styles.content}>
@@ -1974,17 +2111,63 @@ function ProductDetail() {
               {saving ? 'Сохранение...' : 'Сохранить'}
             </button>
           </>
+        ) : isUserProduct && productStatus === 'pending_approval' ? (
+          <>
+            <button
+              type="button"
+              style={styles.backBtn}
+              onClick={() => navigate('/user-products')}
+            >
+              ← Назад
+            </button>
+            <div style={{flex: 1}} />
+            <button
+              type="button"
+              style={styles.rejectBtn}
+              onClick={() => setShowRejectModal(true)}
+              disabled={saving}
+            >
+              Отклонить
+            </button>
+            <button
+              type="button"
+              style={styles.approveBtn}
+              onClick={handleApprove}
+              disabled={saving}
+            >
+              {saving ? 'Одобрение...' : 'Одобрить'}
+            </button>
+          </>
+        ) : isUserProduct && productStatus === 'approved' ? (
+          <>
+            <button
+              type="button"
+              style={styles.backBtn}
+              onClick={() => navigate('/user-products')}
+            >
+              ← Назад
+            </button>
+            <div style={{flex: 1}} />
+            <button
+              type="button"
+              style={styles.approveBtn}
+              onClick={handleConfirmReceipt}
+              disabled={saving}
+            >
+              {saving ? 'Подтверждение...' : 'Подтвердить приём'}
+            </button>
+          </>
         ) : (
           <>
             <button
               type="button"
               style={styles.backBtn}
-              onClick={() => navigate('/products')}
+              onClick={() => isUserProduct ? navigate('/user-products') : navigate('/products')}
             >
               ← Назад
             </button>
             <div style={{flex: 1}} />
-            {status === 'active' && (
+            {!isUserProduct && status === 'active' && (
               <button
                 type="button"
                 style={styles.draftBtn}
@@ -1994,7 +2177,7 @@ function ProductDetail() {
                 {saving ? 'Перемещение...' : 'В черновик'}
               </button>
             )}
-            {status === 'draft' && (
+            {!isUserProduct && status === 'draft' && (
               <button
                 type="button"
                 style={styles.activateBtn}
@@ -2004,16 +2187,43 @@ function ProductDetail() {
                 {saving ? 'Активация...' : 'Сделать активным'}
               </button>
             )}
-            <button
-              type="button"
-              style={styles.editBtn}
-              onClick={() => setIsEditMode(true)}
-            >
-              Редактировать
-            </button>
+            {!isUserProduct && (
+              <button
+                type="button"
+                style={styles.editBtn}
+                onClick={() => setIsEditMode(true)}
+              >
+                Редактировать
+              </button>
+            )}
           </>
         )}
       </div>
+
+      {/* Reject Modal */}
+      {showRejectModal && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modal}>
+            <h3 style={styles.modalTitle}>Отклонить товар</h3>
+            <p style={styles.modalText}>Укажите причину отклонения:</p>
+            <textarea
+              style={styles.modalTextarea}
+              value={rejectReason}
+              onChange={e => setRejectReason(e.target.value)}
+              placeholder="Причина отклонения..."
+              rows={4}
+            />
+            <div style={styles.modalActions}>
+              <button style={styles.modalCancelBtn} onClick={() => { setShowRejectModal(false); setRejectReason(''); }} disabled={saving}>
+                Отмена
+              </button>
+              <button style={styles.modalConfirmBtn} onClick={handleReject} disabled={saving}>
+                {saving ? 'Отклонение...' : 'Отклонить'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2059,6 +2269,53 @@ const styles = {
     fontSize: '13px',
     color: '#202223',
     fontWeight: '600',
+  },
+
+  // Delivery info card styles
+  deliveryInfoCard: {
+    backgroundColor: '#eff6ff',
+    border: '1px solid #bfdbfe',
+    borderRadius: '8px',
+    padding: '14px 16px',
+    marginBottom: '12px',
+    marginLeft: '40px',
+    maxWidth: '720px',
+  },
+  deliveryInfoHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '10px',
+  },
+  deliveryInfoTitle: {
+    fontSize: '14px',
+    fontWeight: '600',
+    color: '#1d4ed8',
+  },
+  deliveryInfoContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  deliveryInfoRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  deliveryInfoLabel: {
+    fontSize: '13px',
+    color: '#4b5563',
+  },
+  deliveryInfoValue: {
+    fontSize: '13px',
+    color: '#1f2937',
+    fontWeight: '500',
+  },
+  deliveryInfoHighlight: {
+    backgroundColor: '#dbeafe',
+    padding: '6px 10px',
+    borderRadius: '4px',
+    marginTop: '4px',
   },
 
   content: {
@@ -2270,6 +2527,12 @@ const styles = {
   skuLabel: { fontSize: '12px', color: '#6d7175', marginRight: '4px' },
   skuValue: { fontSize: '12px', color: '#303030', fontFamily: 'monospace' },
   skuCopiedText: { fontSize: '11px', color: '#008060', marginLeft: '8px' },
+
+  // User product approve/reject buttons
+  rejectBtn: { padding: '6px 16px', fontSize: '13px', fontWeight: '500', color: '#d72c0d', backgroundColor: '#fff', border: '1px solid #fcd4d4', borderRadius: '6px', cursor: 'pointer', marginRight: '8px' },
+  approveBtn: { padding: '6px 20px', fontSize: '13px', fontWeight: '600', color: '#fff', backgroundColor: '#008060', border: 'none', borderRadius: '6px', cursor: 'pointer' },
+  modalTextarea: { width: '100%', padding: '10px', border: '1px solid #c9cccf', borderRadius: '6px', fontSize: '13px', resize: 'vertical', boxSizing: 'border-box', marginBottom: '16px' },
+  modalConfirmBtn: { padding: '8px 16px', fontSize: '13px', fontWeight: '600', color: '#fff', backgroundColor: '#d72c0d', border: 'none', borderRadius: '6px', cursor: 'pointer' },
 };
 
 export default ProductDetail;

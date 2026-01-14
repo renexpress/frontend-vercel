@@ -119,11 +119,16 @@ function Support() {
     if ((!newMessage.trim() && !selectedFile) || !selectedChat || sending) return;
     setSending(true);
     try {
+      // Get current admin name from localStorage
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const adminName = user.full_name || user.username || 'Администратор';
+
       if (selectedFile) await uploadFile();
       if (newMessage.trim()) {
         await axios.post(`${API_URL}/support/${selectedChat.client_id}/send/`, {
           message: newMessage,
-          is_from_client: false
+          is_from_client: false,
+          admin_name: adminName
         });
         loadMessages(selectedChat.client_id);
       }
@@ -417,12 +422,17 @@ function Support() {
                       {isClient && (
                         <div style={styles.msgAvatar}>{selectedChat.client_name?.charAt(0).toUpperCase() || 'К'}</div>
                       )}
-                      <div style={{ ...styles.msgBubble, ...(isClient ? styles.msgBubbleClient : styles.msgBubbleAdmin) }}>
-                        {msg.image_url && (
-                          <img src={msg.image_url} alt="" style={styles.msgImage} onClick={() => window.open(msg.image_url, '_blank')} />
+                      <div style={styles.msgWrapper}>
+                        {!isClient && msg.admin_name && (
+                          <div style={styles.adminNameLabel}>{msg.admin_name}</div>
                         )}
-                        {msg.message && <p style={{ ...styles.msgText, color: isClient ? '#303030' : '#fff' }}>{msg.message}</p>}
-                        <span style={{ ...styles.msgTime, color: isClient ? '#8c9196' : 'rgba(255,255,255,0.7)' }}>{formatTime(msg.created_at)}</span>
+                        <div style={{ ...styles.msgBubble, ...(isClient ? styles.msgBubbleClient : styles.msgBubbleAdmin) }}>
+                          {msg.image_url && (
+                            <img src={msg.image_url} alt="" style={styles.msgImage} onClick={() => window.open(msg.image_url, '_blank')} />
+                          )}
+                          {msg.message && <p style={{ ...styles.msgText, color: isClient ? '#303030' : '#fff' }}>{msg.message}</p>}
+                          <span style={{ ...styles.msgTime, color: isClient ? '#8c9196' : 'rgba(255,255,255,0.7)' }}>{formatTime(msg.created_at)}</span>
+                        </div>
                       </div>
                     </div>
                   );
@@ -897,8 +907,20 @@ const styles = {
     fontSize: '11px',
     fontWeight: '600',
   },
-  msgBubble: {
+  msgWrapper: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
     maxWidth: '65%',
+  },
+  adminNameLabel: {
+    fontSize: '11px',
+    fontWeight: '500',
+    color: '#6d7175',
+    marginBottom: '4px',
+    paddingRight: '4px',
+  },
+  msgBubble: {
     padding: '10px 14px',
     borderRadius: '12px',
   },

@@ -440,7 +440,23 @@ function Products() {
                   </td>
                   <td style={styles.td}>{getParentCategory(product)}</td>
                   <td style={styles.td}>
-                    {product.retail_price ? `${Number(product.retail_price).toLocaleString()} ₽` : '—'}
+                    {product.retail_price ? (
+                      product.discount_price && product.discount_price < product.retail_price ? (
+                        <div style={styles.priceWithDiscount}>
+                          <span style={styles.discountBadge}>
+                            -{Math.round((1 - product.discount_price / product.retail_price) * 100)}%
+                          </span>
+                          <span style={styles.discountPrice}>
+                            {Number(product.discount_price).toLocaleString()} ₽
+                          </span>
+                          <span style={styles.originalPrice}>
+                            {Number(product.retail_price).toLocaleString()} ₽
+                          </span>
+                        </div>
+                      ) : (
+                        `${Number(product.retail_price).toLocaleString()} ₽`
+                      )
+                    ) : '—'}
                   </td>
                 </tr>
               );
@@ -796,6 +812,33 @@ const styles = {
     color: '#303030',
     cursor: 'pointer',
     transition: 'background-color 0.15s',
+  },
+
+  // Discount price styles
+  priceWithDiscount: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    flexWrap: 'wrap',
+  },
+  discountBadge: {
+    display: 'inline-block',
+    padding: '1px 5px',
+    backgroundColor: '#FF3B30',
+    color: '#fff',
+    borderRadius: '4px',
+    fontSize: '10px',
+    fontWeight: '700',
+  },
+  discountPrice: {
+    fontSize: '13px',
+    fontWeight: '600',
+    color: '#2AABAB',
+  },
+  originalPrice: {
+    fontSize: '11px',
+    color: '#999',
+    textDecoration: 'line-through',
   },
 };
 

@@ -2,37 +2,42 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API_URL from '../config/api';
 
-function UserProducts() {
-  const [products, setProducts] = useState([]);
+function Deliveries() {
+  const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
   const [hoveredRow, setHoveredRow] = useState(null);
   const [hoveredBtn, setHoveredBtn] = useState(null);
-  const [hoveredSort, setHoveredSort] = useState(null);
   const navigate = useNavigate();
 
   // Search & Filter state
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilters, setSearchFilters] = useState({
-    name: true,
-    description: false,
-    category: false,
-    owner: true,
-    sku: false,
+    delivery_number: true,
+    receiver: true,
+    product: false,
   });
 
   // Sort state
   const [showSort, setShowSort] = useState(false);
   const [sortBy, setSortBy] = useState('created_desc');
+  const [hoveredSort, setHoveredSort] = useState(null);
+
+  // Add delivery modal
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addForm, setAddForm] = useState({
+    receiver_username: '',
+    sender_username: '',
+    product_description: '',
+    admin_notes: ''
+  });
+  const [addError, setAddError] = useState('');
+  const [addLoading, setAddLoading] = useState(false);
 
   const sortOptions = [
     { id: 'created_desc', label: 'Сначала новые' },
     { id: 'created_asc', label: 'Сначала старые' },
-    { id: 'updated_desc', label: 'Недавно обновленные' },
-    { id: 'updated_asc', label: 'Давно обновленные' },
-    { id: 'category_asc', label: 'Категория А-Я' },
-    { id: 'category_desc', label: 'Категория Я-А' },
   ];
 
   const sortRef = useRef(null);
@@ -50,11 +55,9 @@ function UserProducts() {
   }, [showSort]);
 
   const filterOptions = [
-    { id: 'name', label: 'Название' },
-    { id: 'description', label: 'Описание' },
-    { id: 'category', label: 'Категория' },
-    { id: 'owner', label: 'Владелец' },
-    { id: 'sku', label: 'Артикул' },
+    { id: 'delivery_number', label: '№ Доставки' },
+    { id: 'receiver', label: 'Получатель' },
+    { id: 'product', label: 'Товар' },
   ];
 
   const toggleFilter = (filterId) => {
@@ -62,82 +65,98 @@ function UserProducts() {
   };
 
   useEffect(() => {
-    fetchProducts();
+    fetchDeliveries();
   }, []);
 
-  const fetchProducts = async () => {
+  const fetchDeliveries = async () => {
     try {
-      const res = await fetch(`${API_URL}/products/?is_user_product=true&show_all=true`);
+      const res = await fetch(`${API_URL}/deliveries/`);
       const data = await res.json();
-      let productsList = [];
-      if (Array.isArray(data)) {
-        productsList = data;
-      } else if (data.products && Array.isArray(data.products)) {
-        productsList = data.products;
-      } else if (data.results && Array.isArray(data.results)) {
-        productsList = data.results;
-      }
-      setProducts(productsList);
+      setDeliveries(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error('Error fetching deliveries:', error);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleAddDelivery = async (e) => {
+    e.preventDefault();
+    setAddError('');
+    setAddLoading(true);
+
+    try {
+      const payload = {
+        ...addForm,
+        receiver_username: addForm.receiver_username ? `REN${addForm.receiver_username}` : '',
+        sender_username: addForm.sender_username ? `REN${addForm.sender_username}` : '',
+      };
+      const res = await fetch(`${API_URL}/deliveries/create/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setShowAddModal(false);
+        setAddForm({ receiver_username: '', sender_username: '', product_description: '', admin_notes: '' });
+        fetchDeliveries();
+      } else {
+        const errorMsg = data.receiver_username?.[0] || data.sender_username?.[0] || data.error || JSON.stringify(data) || 'Ошибка создания доставки';
+        setAddError(errorMsg);
+      }
+    } catch (error) {
+      setAddError('Ошибка сети');
+    } finally {
+      setAddLoading(false);
+    }
+  };
+
   const tabs = [
     { id: 'all', label: 'Все' },
-    { id: 'pending_approval', label: 'Ожидают одобрения' },
-    { id: 'approved', label: 'Ожидают сдачи' },
-    { id: 'active', label: 'Активные' },
-    { id: 'rejected', label: 'Отклонённые' },
-    { id: 'deleted', label: 'Удалённые' },
+    { id: 'prinyat', label: 'Принят' },
+    { id: 'v_stambule', label: 'В Стамбуле' },
+    { id: 'otpravlen', label: 'Отправлен' },
+    { id: 'v_puti', label: 'В пути' },
+    { id: 'v_moskve', label: 'В Москве' },
+    { id: 'oplata', label: 'Оплата' },
+    { id: 'dostavka', label: 'Доставка' },
+    { id: 'vidan', label: 'Выдан' },
   ];
 
   const statusConfig = {
-    pending_approval: { label: 'Ожидает одобрения', bg: '#fef3c7', color: '#92400e' },
-    approved: { label: 'Ожидает сдачи', bg: '#dbeafe', color: '#1d4ed8' },
-    active: { label: 'Активен', bg: '#d1fae5', color: '#065f46' },
-    rejected: { label: 'Отклонён', bg: '#fee2e2', color: '#991b1b' },
-    deleted: { label: 'Удалён', bg: '#f3f4f6', color: '#6b7280' },
-    draft: { label: 'Черновик', bg: '#e4e5e7', color: '#6d7175' },
+    prinyat: { label: 'Принят', bg: '#fef3c7', color: '#92400e' },
+    v_stambule: { label: 'В Стамбуле', bg: '#fce7f3', color: '#9d174d' },
+    otpravlen: { label: 'Отправлен', bg: '#dbeafe', color: '#1d4ed8' },
+    v_puti: { label: 'В пути', bg: '#e0e7ff', color: '#3730a3' },
+    v_moskve: { label: 'В Москве', bg: '#cffafe', color: '#0e7490' },
+    oplata: { label: 'Оплата', bg: '#fef9c3', color: '#854d0e' },
+    dostavka: { label: 'Доставка', bg: '#dcfce7', color: '#166534' },
+    vidan: { label: 'Выдан', bg: '#d1fae5', color: '#065f46' },
   };
 
   const getStatusInfo = (status) => {
-    return statusConfig[status] || { label: status || 'Неизвестно', bg: '#f3f4f6', color: '#374151' };
+    return statusConfig[status] || { label: status, bg: '#f3f4f6', color: '#374151' };
   };
 
-  const filteredProducts = products.filter(product => {
-    // Tab filter
-    if (activeTab === 'all') {
-      // "All" tab excludes deleted and rejected
-      if (product.product_status === 'deleted' || product.product_status === 'rejected') return false;
-    } else if (product.product_status !== activeTab) {
-      return false;
-    }
+  const filteredDeliveries = deliveries.filter(delivery => {
+    if (activeTab !== 'all' && delivery.status !== activeTab) return false;
 
-    // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       let matches = false;
 
-      if (searchFilters.name && product.name?.toLowerCase().includes(query)) {
+      if (searchFilters.delivery_number && delivery.delivery_number?.toLowerCase().includes(query)) {
         matches = true;
       }
-      if (searchFilters.description && product.description?.toLowerCase().includes(query)) {
-        matches = true;
-      }
-      if (searchFilters.category) {
-        const catName = product.category_name?.toLowerCase() || '';
-        const catPath = product.category_full_path?.toLowerCase() || '';
-        if (catName.includes(query) || catPath.includes(query)) {
+      if (searchFilters.receiver) {
+        if (delivery.receiver_username?.toLowerCase().includes(query) ||
+            delivery.receiver_name?.toLowerCase().includes(query)) {
           matches = true;
         }
       }
-      if (searchFilters.owner && product.owner_username?.toLowerCase().includes(query)) {
-        matches = true;
-      }
-      if (searchFilters.sku && product.sku?.toLowerCase().includes(query)) {
+      if (searchFilters.product && delivery.product_description?.toLowerCase().includes(query)) {
         matches = true;
       }
 
@@ -151,31 +170,15 @@ function UserProducts() {
         return new Date(a.created_at || 0) - new Date(b.created_at || 0);
       case 'created_desc':
         return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-      case 'updated_asc':
-        return new Date(a.updated_at || 0) - new Date(b.updated_at || 0);
-      case 'updated_desc':
-        return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
-      case 'category_asc':
-        return (a.category_name || '').localeCompare(b.category_name || '', 'ru');
-      case 'category_desc':
-        return (b.category_name || '').localeCompare(a.category_name || '', 'ru');
       default:
         return 0;
     }
   });
 
-  const getParentCategory = (product) => {
-    if (product.category_full_path) {
-      const parts = product.category_full_path.split(' > ');
-      return parts[0];
-    }
-    return product.category_name || '—';
-  };
-
-  const getProductImage = (product) => {
-    if (product.primary_image) return product.primary_image;
-    if (product.images && product.images.length > 0) return product.images[0].image_url;
-    return null;
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '—';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
   if (loading) {
@@ -191,11 +194,22 @@ function UserProducts() {
       {/* Header */}
       <div style={styles.header}>
         <div style={styles.titleRow}>
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="#303030">
-            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#303030">
+            <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
           </svg>
-          <h1 style={styles.title}>Товары пользователей</h1>
+          <h1 style={styles.title}>Доставки RenCargo</h1>
         </div>
+        <button
+          style={{
+            ...styles.btnPrimary,
+            backgroundColor: hoveredBtn === 'add' ? '#1a1a1a' : '#303030',
+          }}
+          onMouseEnter={() => setHoveredBtn('add')}
+          onMouseLeave={() => setHoveredBtn(null)}
+          onClick={() => setShowAddModal(true)}
+        >
+          + Добавить доставку
+        </button>
       </div>
 
       {/* Card container */}
@@ -226,9 +240,6 @@ function UserProducts() {
             >
               <svg width="14" height="14" viewBox="0 0 20 20" fill="#5c5f62">
                 <path d="M8 12a4 4 0 110-8 4 4 0 010 8zm9.707 4.293l-4.82-4.82A5.968 5.968 0 0014 8 6 6 0 102 8a6 6 0 006 6 5.968 5.968 0 003.473-1.113l4.82 4.82a1 1 0 001.414-1.414z"/>
-              </svg>
-              <svg width="14" height="14" viewBox="0 0 20 20" fill="#5c5f62">
-                <path d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm2 4a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1zm2 4a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z"/>
               </svg>
             </button>
             <div ref={sortRef} style={styles.sortWrapper}>
@@ -285,7 +296,7 @@ function UserProducts() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Поиск товаров пользователей..."
+                placeholder="Поиск доставок..."
                 style={styles.searchInput}
                 autoFocus
               />
@@ -295,7 +306,7 @@ function UserProducts() {
                   onClick={() => setSearchQuery('')}
                   style={styles.searchClear}
                 >
-                  ×
+                  x
                 </button>
               )}
             </div>
@@ -321,7 +332,7 @@ function UserProducts() {
             </div>
             {searchQuery && (
               <div style={styles.searchResults}>
-                Найдено: {filteredProducts.length} товаров
+                Найдено: {filteredDeliveries.length} доставок
               </div>
             )}
           </div>
@@ -331,59 +342,51 @@ function UserProducts() {
         <table style={styles.table}>
           <thead>
             <tr>
-              <th style={styles.thCheck}>
-                <input type="checkbox" style={styles.checkbox} />
-              </th>
+              <th style={styles.th}>№ Доставки</th>
+              <th style={styles.th}>Получатель</th>
               <th style={styles.th}>Товар</th>
-              <th style={styles.th}>Артикул</th>
-              <th style={styles.th}>Владелец</th>
+              <th style={styles.th}>Тип доставки</th>
+              <th style={styles.th}>Вес</th>
+              <th style={styles.th}>Сумма</th>
               <th style={styles.th}>Статус</th>
-              <th style={styles.th}>Категория</th>
-              <th style={styles.th}>Цена</th>
+              <th style={styles.th}>Дата</th>
             </tr>
           </thead>
           <tbody>
-            {filteredProducts.map((product, idx) => {
-              const imageUrl = getProductImage(product);
-              const statusInfo = getStatusInfo(product.product_status);
+            {filteredDeliveries.map((delivery, idx) => {
+              const statusInfo = getStatusInfo(delivery.status);
               return (
                 <tr
-                  key={product.id}
+                  key={delivery.id}
                   style={{
                     ...styles.tr,
                     backgroundColor: hoveredRow === idx ? '#f6f6f7' : '#fff',
                   }}
                   onMouseEnter={() => setHoveredRow(idx)}
                   onMouseLeave={() => setHoveredRow(null)}
-                  onClick={() => navigate(`/products/${product.id}`)}
+                  onClick={() => navigate(`/deliveries/${delivery.id}`)}
                 >
-                  <td style={styles.tdCheck} onClick={e => e.stopPropagation()}>
-                    <input type="checkbox" style={styles.checkbox} />
+                  <td style={styles.td}>
+                    <span style={styles.deliveryNumber}>REN{delivery.receiver}-{delivery.sequential_number || 1}</span>
+                    <div style={styles.deliveryNumberSmall}>{delivery.delivery_number}</div>
                   </td>
                   <td style={styles.td}>
-                    <div style={styles.productCell}>
-                      {imageUrl ? (
-                        <img src={imageUrl} alt={product.name} style={styles.productImage} />
-                      ) : (
-                        <div style={styles.imagePlaceholder}>
-                          <svg width="16" height="16" viewBox="0 0 20 20" fill="#8c9196">
-                            <path d="M2.5 4A1.5 1.5 0 014 2.5h12A1.5 1.5 0 0117.5 4v12a1.5 1.5 0 01-1.5 1.5H4A1.5 1.5 0 012.5 16V4zm3.25 3a1.25 1.25 0 100-2.5 1.25 1.25 0 000 2.5zm9.75 3.5l-3-3-4.5 4.5-1.5-1.5-4 4V16h12a.5.5 0 00.5-.5v-4.5z"/>
-                          </svg>
-                        </div>
-                      )}
-                      <span style={styles.productName}>{product.name}</span>
+                    <div>
+                      <div style={styles.receiverUsername}>{delivery.receiver_username}</div>
+                      <div style={styles.receiverName}>{delivery.receiver_name || '—'}</div>
                     </div>
                   </td>
                   <td style={styles.td}>
-                    <span style={styles.skuText}>{product.sku || '—'}</span>
+                    <span style={styles.productText}>{delivery.product_description?.substring(0, 30) || '—'}{delivery.product_description?.length > 30 ? '...' : ''}</span>
                   </td>
                   <td style={styles.td}>
-                    <div style={styles.ownerCell}>
-                      <div style={styles.ownerAvatar}>
-                        {(product.owner_username || '?')[0].toUpperCase()}
-                      </div>
-                      <span style={styles.ownerName}>{product.owner_username || '—'}</span>
-                    </div>
+                    {delivery.delivery_type_name || '—'}
+                  </td>
+                  <td style={styles.td}>
+                    {delivery.weight_kg ? `${delivery.weight_kg} кг` : '—'}
+                  </td>
+                  <td style={styles.td}>
+                    {delivery.total_price ? `${delivery.total_price}$` : '—'}
                   </td>
                   <td style={styles.td}>
                     <span style={{
@@ -394,42 +397,90 @@ function UserProducts() {
                       {statusInfo.label}
                     </span>
                   </td>
-                  <td style={styles.td}>{getParentCategory(product)}</td>
-                  <td style={styles.td}>
-                    {product.retail_price ? (
-                      product.discount_price && product.discount_price < product.retail_price ? (
-                        <div style={styles.priceWithDiscount}>
-                          <span style={styles.discountBadge}>
-                            -{Math.round((1 - product.discount_price / product.retail_price) * 100)}%
-                          </span>
-                          <span style={styles.discountPrice}>
-                            {Number(product.discount_price).toLocaleString()} ₽
-                          </span>
-                          <span style={styles.originalPrice}>
-                            {Number(product.retail_price).toLocaleString()} ₽
-                          </span>
-                        </div>
-                      ) : (
-                        `${Number(product.retail_price).toLocaleString()} ₽`
-                      )
-                    ) : '—'}
-                  </td>
+                  <td style={styles.td}>{formatDate(delivery.created_at)}</td>
                 </tr>
               );
             })}
           </tbody>
         </table>
 
-        {filteredProducts.length === 0 && (
+        {filteredDeliveries.length === 0 && (
           <div style={styles.empty}>
-            <svg width="48" height="48" viewBox="0 0 20 20" fill="#8c9196" style={{ marginBottom: 12 }}>
-              <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="#8c9196" style={{ marginBottom: 12 }}>
+              <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4z"/>
             </svg>
-            <p style={styles.emptyTitle}>Товары не найдены</p>
-            <p style={styles.emptyText}>Попробуйте изменить параметры поиска или фильтры</p>
+            <p style={styles.emptyTitle}>Доставки не найдены</p>
+            <p style={styles.emptyText}>Добавьте новую доставку или измените фильтры</p>
           </div>
         )}
       </div>
+
+      {/* Add Delivery Modal */}
+      {showAddModal && (
+        <div style={styles.modalOverlay} onClick={() => setShowAddModal(false)}>
+          <div style={styles.modal} onClick={e => e.stopPropagation()}>
+            <h2 style={styles.modalTitle}>Новая доставка</h2>
+            <form onSubmit={handleAddDelivery}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Получатель *</label>
+                <div style={styles.renInputWrapper}>
+                  <span style={styles.renPrefix}>REN</span>
+                  <input
+                    type="text"
+                    value={addForm.receiver_username}
+                    onChange={e => setAddForm({ ...addForm, receiver_username: e.target.value.replace(/\D/g, '') })}
+                    placeholder="123"
+                    style={styles.renInput}
+                    required
+                  />
+                </div>
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Отправитель *</label>
+                <div style={styles.renInputWrapper}>
+                  <span style={styles.renPrefix}>REN</span>
+                  <input
+                    type="text"
+                    value={addForm.sender_username}
+                    onChange={e => setAddForm({ ...addForm, sender_username: e.target.value.replace(/\D/g, '') })}
+                    placeholder="456"
+                    style={styles.renInput}
+                  />
+                </div>
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Описание товара</label>
+                <textarea
+                  value={addForm.product_description}
+                  onChange={e => setAddForm({ ...addForm, product_description: e.target.value })}
+                  placeholder="Одежда, текстиль и т.д."
+                  style={styles.textarea}
+                  rows={3}
+                />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Заметки</label>
+                <textarea
+                  value={addForm.admin_notes}
+                  onChange={e => setAddForm({ ...addForm, admin_notes: e.target.value })}
+                  placeholder="Дополнительная информация"
+                  style={styles.textarea}
+                  rows={2}
+                />
+              </div>
+              {addError && <div style={styles.error}>{addError}</div>}
+              <div style={styles.modalButtons}>
+                <button type="button" style={styles.btnSecondary} onClick={() => setShowAddModal(false)}>
+                  Отмена
+                </button>
+                <button type="submit" style={styles.btnPrimary} disabled={addLoading}>
+                  {addLoading ? 'Создание...' : 'Создать'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -470,6 +521,19 @@ const styles = {
     color: '#303030',
     margin: 0,
   },
+  btnPrimary: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '8px 16px',
+    backgroundColor: '#303030',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '13px',
+    fontWeight: '600',
+    color: '#fff',
+    cursor: 'pointer',
+    transition: 'background-color 0.15s',
+  },
 
   card: {
     backgroundColor: '#fff',
@@ -485,6 +549,7 @@ const styles = {
     alignItems: 'center',
     padding: '0 12px',
     borderBottom: '1px solid #e1e3e5',
+    overflowX: 'auto',
   },
   tabsLeft: {
     display: 'flex',
@@ -499,6 +564,7 @@ const styles = {
     fontWeight: '500',
     color: '#6d7175',
     cursor: 'pointer',
+    whiteSpace: 'nowrap',
   },
   tabActive: {
     padding: '10px 12px',
@@ -509,6 +575,7 @@ const styles = {
     fontWeight: '600',
     color: '#303030',
     cursor: 'pointer',
+    whiteSpace: 'nowrap',
   },
   tabsRight: {
     display: 'flex',
@@ -523,7 +590,6 @@ const styles = {
     border: '1px solid #c9cccf',
     borderRadius: '6px',
     cursor: 'pointer',
-    boxShadow: '0 1px 0 rgba(0,0,0,0.04), inset 0 -1px 0 rgba(0,0,0,0.1)',
     transition: 'background-color 0.15s',
   },
 
@@ -540,89 +606,37 @@ const styles = {
     backgroundColor: '#f6f6f7',
     borderBottom: '1px solid #e1e3e5',
   },
-  thCheck: {
-    padding: '8px 12px',
-    width: '36px',
-    backgroundColor: '#f6f6f7',
-    borderBottom: '1px solid #e1e3e5',
-  },
   tr: {
     cursor: 'pointer',
     transition: 'background-color 0.15s',
   },
   td: {
-    padding: '8px 12px',
+    padding: '10px 12px',
     fontSize: '13px',
     color: '#303030',
     borderBottom: '1px solid #e1e3e5',
-  },
-  tdCheck: {
-    padding: '8px 12px',
-    width: '36px',
-    borderBottom: '1px solid #e1e3e5',
-  },
-  checkbox: {
-    width: '16px',
-    height: '16px',
-    cursor: 'pointer',
   },
 
-  productCell: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
+  deliveryNumber: {
+    fontWeight: '600',
+    color: '#2AABAB',
   },
-  productImage: {
-    width: '36px',
-    height: '36px',
-    borderRadius: '6px',
-    objectFit: 'cover',
-    border: '1px solid #e1e3e5',
+  deliveryNumberSmall: {
+    fontSize: '11px',
+    color: '#8c9196',
+    marginTop: '2px',
   },
-  imagePlaceholder: {
-    width: '36px',
-    height: '36px',
-    borderRadius: '6px',
-    backgroundColor: '#f1f1f1',
-    border: '1px solid #e1e3e5',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  productName: {
-    fontSize: '13px',
-    fontWeight: '500',
+  receiverUsername: {
+    fontWeight: '600',
     color: '#303030',
   },
-  skuText: {
+  receiverName: {
     fontSize: '12px',
     color: '#6d7175',
-    fontFamily: 'monospace',
   },
-
-  ownerCell: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-  },
-  ownerAvatar: {
-    width: '28px',
-    height: '28px',
-    borderRadius: '6px',
-    backgroundColor: '#f6f6f7',
-    border: '1px solid #e1e3e5',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '11px',
-    fontWeight: '600',
+  productText: {
     color: '#6d7175',
   },
-  ownerName: {
-    fontSize: '13px',
-    color: '#303030',
-  },
-
   statusBadge: {
     display: 'inline-block',
     padding: '2px 8px',
@@ -688,7 +702,6 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    lineHeight: 1,
   },
   filterSection: {
     display: 'flex',
@@ -749,32 +762,107 @@ const styles = {
     transition: 'background-color 0.15s',
   },
 
-  // Discount price styles
-  priceWithDiscount: {
+  // Modal styles
+  modalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
     display: 'flex',
     alignItems: 'center',
-    gap: '6px',
-    flexWrap: 'wrap',
+    justifyContent: 'center',
+    zIndex: 1000,
   },
-  discountBadge: {
-    display: 'inline-block',
-    padding: '1px 5px',
-    backgroundColor: '#FF3B30',
-    color: '#fff',
-    borderRadius: '4px',
-    fontSize: '10px',
-    fontWeight: '700',
+  modal: {
+    backgroundColor: '#fff',
+    borderRadius: '12px',
+    padding: '24px',
+    width: '100%',
+    maxWidth: '480px',
+    maxHeight: '90vh',
+    overflow: 'auto',
   },
-  discountPrice: {
-    fontSize: '13px',
+  modalTitle: {
+    fontSize: '18px',
     fontWeight: '600',
-    color: '#2AABAB',
+    color: '#303030',
+    margin: '0 0 20px 0',
   },
-  originalPrice: {
-    fontSize: '11px',
-    color: '#999',
-    textDecoration: 'line-through',
+  formGroup: {
+    marginBottom: '16px',
+  },
+  label: {
+    display: 'block',
+    fontSize: '13px',
+    fontWeight: '500',
+    color: '#303030',
+    marginBottom: '6px',
+  },
+  input: {
+    width: '100%',
+    padding: '10px 12px',
+    fontSize: '14px',
+    border: '1px solid #c9cccf',
+    borderRadius: '8px',
+    outline: 'none',
+    boxSizing: 'border-box',
+  },
+  renInputWrapper: {
+    display: 'flex',
+    alignItems: 'center',
+    border: '1px solid #c9cccf',
+    borderRadius: '8px',
+    overflow: 'hidden',
+  },
+  renPrefix: {
+    padding: '10px 12px',
+    backgroundColor: '#f6f6f7',
+    color: '#202223',
+    fontWeight: '600',
+    fontSize: '14px',
+    borderRight: '1px solid #c9cccf',
+  },
+  renInput: {
+    flex: 1,
+    padding: '10px 12px',
+    fontSize: '14px',
+    border: 'none',
+    outline: 'none',
+    boxSizing: 'border-box',
+  },
+  textarea: {
+    width: '100%',
+    padding: '10px 12px',
+    fontSize: '14px',
+    border: '1px solid #c9cccf',
+    borderRadius: '8px',
+    outline: 'none',
+    boxSizing: 'border-box',
+    resize: 'vertical',
+  },
+  error: {
+    color: '#d72c0d',
+    fontSize: '13px',
+    marginBottom: '12px',
+  },
+  modalButtons: {
+    display: 'flex',
+    gap: '12px',
+    justifyContent: 'flex-end',
+    marginTop: '20px',
+  },
+  btnSecondary: {
+    padding: '8px 16px',
+    backgroundColor: '#fff',
+    border: '1px solid #c9cccf',
+    borderRadius: '8px',
+    fontSize: '13px',
+    fontWeight: '500',
+    color: '#303030',
+    cursor: 'pointer',
   },
 };
 
-export default UserProducts;
+export default Deliveries;
