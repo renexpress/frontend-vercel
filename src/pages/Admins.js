@@ -396,11 +396,11 @@ function Admins() {
                     <span style={{
                       ...styles.statusBadge,
                       backgroundColor: admin.is_active ? '#e3f4e8' : '#fef2f2',
-                      color: admin.is_active ? '#1a7f37' : '#d72c0d',
+                      color: admin.is_active ? '#2AABAB' : '#d72c0d',
                     }}>
                       <span style={{
                         ...styles.statusDot,
-                        backgroundColor: admin.is_active ? '#1a7f37' : '#d72c0d',
+                        backgroundColor: admin.is_active ? '#2AABAB' : '#d72c0d',
                       }}/>
                       {admin.is_active ? 'Активен' : 'Неактивен'}
                     </span>

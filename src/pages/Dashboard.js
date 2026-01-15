@@ -86,7 +86,7 @@ const STATUS_CONFIG = {
   istanbul_warehouse: { label: 'Склад Стамбул', color: '#3B82F6', bg: '#DBEAFE' },
   to_moscow: { label: 'В пути', color: '#8B5CF6', bg: '#EDE9FE' },
   moscow_warehouse: { label: 'Склад Москва', color: '#06B6D4', bg: '#CFFAFE' },
-  to_address: { label: 'Доставляется', color: '#FF6B35', bg: '#FFF4F0' },
+  to_address: { label: 'Доставляется', color: '#2AABAB', bg: '#E0F5F5' },
   delivered: { label: 'Доставлен', color: '#10B981', bg: '#D1FAE5' },
   cancelled: { label: 'Отменён', color: '#EF4444', bg: '#FEE2E2' },
 };
@@ -225,8 +225,8 @@ function Dashboard() {
         {/* Total Orders */}
         <div style={styles.statCard}>
           <div style={styles.statHeader}>
-            <div style={{...styles.statIcon, backgroundColor: '#FFF4F0'}}>
-              <OrdersIcon color="#FF6B35" />
+            <div style={{...styles.statIcon, backgroundColor: '#E0F5F5'}}>
+              <OrdersIcon color="#2AABAB" />
             </div>
             <span style={styles.statMore}>...</span>
           </div>
@@ -308,7 +308,7 @@ function Dashboard() {
               </div>
             </div>
             <div style={styles.legendRow}>
-              <span style={styles.legendItem}><span style={{...styles.legendDot, backgroundColor: '#FF6B35'}}></span> Доход</span>
+              <span style={styles.legendItem}><span style={{...styles.legendDot, backgroundColor: '#2AABAB'}}></span> Доход</span>
               <span style={styles.legendItem}><span style={{...styles.legendDot, backgroundColor: '#FFD4C4'}}></span> Расходы</span>
             </div>
           </div>
@@ -318,7 +318,7 @@ function Dashboard() {
             <div style={styles.chartBars}>
               {[40, 55, 45, 65, 80, 60, 45, 50].map((height, i) => (
                 <div key={i} style={styles.barGroup}>
-                  <div style={{...styles.bar, height: `${height}%`, backgroundColor: '#FF6B35'}}></div>
+                  <div style={{...styles.bar, height: `${height}%`, backgroundColor: '#2AABAB'}}></div>
                   <div style={{...styles.bar, height: `${height * 0.6}%`, backgroundColor: '#FFD4C4'}}></div>
                 </div>
               ))}
@@ -511,7 +511,7 @@ const styles = {
     width: '40px',
     height: '40px',
     border: '3px solid #F5F5F7',
-    borderTopColor: '#FF6B35',
+    borderTopColor: '#2AABAB',
     borderRadius: '50%',
     animation: 'spin 1s linear infinite',
   },
@@ -789,7 +789,7 @@ const styles = {
   growthProgress: {
     height: '100%',
     width: '83%',
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#2AABAB',
     borderRadius: '4px',
   },
   growthTotal: {
@@ -815,7 +815,7 @@ const styles = {
     gap: '4px',
     background: 'none',
     border: 'none',
-    color: '#FF6B35',
+    color: '#2AABAB',
     fontSize: '13px',
     fontWeight: '500',
     cursor: 'pointer',
@@ -845,7 +845,7 @@ const styles = {
   },
   orderId: {
     fontWeight: '600',
-    color: '#FF6B35',
+    color: '#2AABAB',
   },
   amount: {
     fontWeight: '600',
@@ -909,7 +909,7 @@ const styles = {
   productPrice: {
     fontSize: '14px',
     fontWeight: '600',
-    color: '#FF6B35',
+    color: '#2AABAB',
   },
 };
 

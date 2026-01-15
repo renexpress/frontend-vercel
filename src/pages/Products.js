@@ -211,7 +211,7 @@ function Products() {
       {/* Header - outside the card */}
       <div style={styles.header}>
         <div style={styles.titleRow}>
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="#303030">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="#2AABAB">
             <path fillRule="evenodd" d="M2.5 2a1.5 1.5 0 00-1.5 1.5v4.586a1.5 1.5 0 00.44 1.06l6.998 7a1.5 1.5 0 002.121 0l4.586-4.586a1.5 1.5 0 000-2.121l-7-6.999a1.5 1.5 0 00-1.06-.44H2.5zm3.25 5a1.25 1.25 0 100-2.5 1.25 1.25 0 000 2.5z"/>
           </svg>
           <h1 style={styles.title}>Товары</h1>
@@ -219,7 +219,7 @@ function Products() {
         <button
           style={{
             ...styles.btnPrimary,
-            backgroundColor: hoveredBtn === 'add' ? '#1a1a1a' : '#303030',
+            backgroundColor: hoveredBtn === 'add' ? '#229999' : '#2AABAB',
           }}
           onMouseEnter={() => setHoveredBtn('add')}
           onMouseLeave={() => setHoveredBtn(null)}
@@ -362,9 +362,6 @@ function Products() {
         <table style={styles.table}>
           <thead>
             <tr>
-              <th style={styles.thCheck}>
-                <input type="checkbox" style={styles.checkbox} />
-              </th>
               <th style={styles.th}>Товар</th>
               <th style={styles.th}>Артикул</th>
               <th style={styles.th}>Статус</th>
@@ -381,15 +378,12 @@ function Products() {
                   key={product.id}
                   style={{
                     ...styles.tr,
-                    backgroundColor: hoveredRow === idx ? '#f6f6f7' : '#fff',
+                    backgroundColor: hoveredRow === idx ? '#f0fafa' : '#fff',
                   }}
                   onMouseEnter={() => setHoveredRow(idx)}
                   onMouseLeave={() => setHoveredRow(null)}
                   onClick={() => navigate(`/products/${product.id}`)}
                 >
-                  <td style={styles.tdCheck} onClick={e => e.stopPropagation()}>
-                    <input type="checkbox" style={styles.checkbox} />
-                  </td>
                   <td style={styles.td}>
                     <div style={styles.productCell}>
                       {imageUrl ? (
@@ -505,14 +499,14 @@ const styles = {
   title: {
     fontSize: '18px',
     fontWeight: '600',
-    color: '#303030',
+    color: '#2AABAB',
     margin: 0,
   },
   btnPrimary: {
     display: 'inline-flex',
     alignItems: 'center',
     padding: '6px 12px',
-    backgroundColor: '#303030',
+    backgroundColor: '#2AABAB',
     border: 'none',
     borderRadius: '8px',
     fontSize: '13px',
@@ -556,10 +550,10 @@ const styles = {
     padding: '10px 12px',
     backgroundColor: 'transparent',
     border: 'none',
-    borderBottom: '2px solid #303030',
+    borderBottom: '2px solid #2AABAB',
     fontSize: '13px',
     fontWeight: '600',
-    color: '#303030',
+    color: '#2AABAB',
     cursor: 'pointer',
   },
   tabsRight: {
@@ -655,8 +649,8 @@ const styles = {
   badgeActive: {
     display: 'inline-block',
     padding: '2px 8px',
-    backgroundColor: '#aee9d1',
-    color: '#0d5c3d',
+    backgroundColor: '#E0F5F5',
+    color: '#2AABAB',
     borderRadius: '10px',
     fontSize: '12px',
     fontWeight: '500',
@@ -664,8 +658,8 @@ const styles = {
   badgeDraft: {
     display: 'inline-block',
     padding: '2px 8px',
-    backgroundColor: '#e4e5e7',
-    color: '#6d7175',
+    backgroundColor: '#E0F5F5',
+    color: '#2AABAB',
     borderRadius: '10px',
     fontSize: '12px',
     fontWeight: '500',
@@ -673,8 +667,8 @@ const styles = {
   badgeDeleted: {
     display: 'inline-block',
     padding: '2px 8px',
-    backgroundColor: '#ffd79d',
-    color: '#7a4f01',
+    backgroundColor: '#E0F5F5',
+    color: '#2AABAB',
     borderRadius: '10px',
     fontSize: '12px',
     fontWeight: '500',
@@ -682,8 +676,8 @@ const styles = {
   badgeArchived: {
     display: 'inline-block',
     padding: '2px 8px',
-    backgroundColor: '#d3d3ff',
-    color: '#4a4a9e',
+    backgroundColor: '#E0F5F5',
+    color: '#2AABAB',
     borderRadius: '10px',
     fontSize: '12px',
     fontWeight: '500',

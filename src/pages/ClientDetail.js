@@ -199,7 +199,7 @@ function ClientDetail() {
   };
 
   const getStatusStyle = (status) => {
-    if (status === 'delivered') return { bg: '#e3f4e8', color: '#1a7f37' };
+    if (status === 'delivered') return { bg: '#e3f4e8', color: '#2AABAB' };
     if (status === 'cancelled') return { bg: '#fef2f2', color: '#d72c0d' };
     if (status === 'awaiting_payment') return { bg: '#fff8e6', color: '#b88c1a' };
     return { bg: '#eef2ff', color: '#5c6ac4' };
@@ -216,7 +216,7 @@ function ClientDetail() {
       return { bg: '#f6f6f7', color: '#6d7175', label: 'Распродан' };
     }
     if (productStatus === 'active') {
-      return { bg: '#e3f4e8', color: '#1a7f37', label: 'Активный' };
+      return { bg: '#e3f4e8', color: '#2AABAB', label: 'Активный' };
     }
     if (productStatus === 'approved') {
       return { bg: '#eef2ff', color: '#5c6ac4', label: 'Одобрен' };
@@ -347,11 +347,11 @@ function ClientDetail() {
                   <span style={{
                     ...styles.statusBadge,
                     backgroundColor: client.is_active ? '#e3f4e8' : '#fef2f2',
-                    color: client.is_active ? '#1a7f37' : '#d72c0d',
+                    color: client.is_active ? '#2AABAB' : '#d72c0d',
                   }}>
                     <span style={{
                       ...styles.statusDot,
-                      backgroundColor: client.is_active ? '#1a7f37' : '#d72c0d',
+                      backgroundColor: client.is_active ? '#2AABAB' : '#d72c0d',
                     }}/>
                     {client.is_active ? 'Активен' : 'Неактивен'}
                   </span>
@@ -580,7 +580,7 @@ function ClientDetail() {
 
             <div style={styles.statCard}>
               <div style={{...styles.statIcon, backgroundColor: '#e3f4e8'}}>
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="#1a7f37">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="#2AABAB">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
                 </svg>
               </div>
@@ -805,7 +805,7 @@ function ClientDetail() {
                         <div style={{
                           ...styles.stockBadge,
                           backgroundColor: stock > 0 ? '#e3f4e8' : '#fef2f2',
-                          color: stock > 0 ? '#1a7f37' : '#d72c0d',
+                          color: stock > 0 ? '#2AABAB' : '#d72c0d',
                         }}>
                           {stock > 0 ? `${stock} шт` : 'Нет в наличии'}
                         </div>
@@ -948,7 +948,7 @@ const styles = {
     alignItems: 'center',
     gap: '6px',
     padding: '8px 14px',
-    backgroundColor: '#1a7f37',
+    backgroundColor: '#2AABAB',
     color: '#fff',
     border: 'none',
     borderRadius: '8px',

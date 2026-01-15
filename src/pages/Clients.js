@@ -359,7 +359,7 @@ function Clients() {
                       <span style={{
                         ...styles.ordersBadge,
                         backgroundColor: orderCount > 0 ? '#e3f4e8' : '#f6f6f7',
-                        color: orderCount > 0 ? '#1a7f37' : '#6d7175',
+                        color: orderCount > 0 ? '#2AABAB' : '#6d7175',
                       }}>
                         {orderCount}
                       </span>
@@ -368,11 +368,11 @@ function Clients() {
                       <span style={{
                         ...styles.statusBadge,
                         backgroundColor: client.is_active ? '#e3f4e8' : '#fef2f2',
-                        color: client.is_active ? '#1a7f37' : '#d72c0d',
+                        color: client.is_active ? '#2AABAB' : '#d72c0d',
                       }}>
                         <span style={{
                           ...styles.statusDot,
-                          backgroundColor: client.is_active ? '#1a7f37' : '#d72c0d',
+                          backgroundColor: client.is_active ? '#2AABAB' : '#d72c0d',
                         }}/>
                         {client.is_active ? 'Активен' : 'Неактивен'}
                       </span>

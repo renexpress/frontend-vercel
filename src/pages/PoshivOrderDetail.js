@@ -20,7 +20,7 @@ function PoshivOrderDetail() {
     in_production: { label: 'В производстве', bg: '#fce7f3', color: '#9d174d' },
     ready: { label: 'Готов', bg: '#e0f5f5', color: '#00a0ac' },
     shipped: { label: 'Отправлен', bg: '#dbeafe', color: '#1d4ed8' },
-    delivered: { label: 'Доставлен', bg: '#e3f4e8', color: '#1a7f37' },
+    delivered: { label: 'Доставлен', bg: '#e3f4e8', color: '#2AABAB' },
     cancelled: { label: 'Отменён', bg: '#fef2f2', color: '#d72c0d' },
   };
 
@@ -393,7 +393,7 @@ function PoshivOrderDetail() {
                 <span style={{
                   ...styles.paymentBadge,
                   backgroundColor: order.is_paid ? '#e3f4e8' : '#fff8e6',
-                  color: order.is_paid ? '#1a7f37' : '#b88c1a',
+                  color: order.is_paid ? '#2AABAB' : '#b88c1a',
                 }}>
                   {order.is_paid ? 'Оплачено' : 'Ожидает оплаты'}
                 </span>
@@ -403,7 +403,7 @@ function PoshivOrderDetail() {
                 <button
                   style={{
                     ...styles.confirmPaymentBtn,
-                    backgroundColor: hoveredBtn === 'confirm' ? '#148c3b' : '#1a7f37',
+                    backgroundColor: hoveredBtn === 'confirm' ? '#148c3b' : '#2AABAB',
                   }}
                   onClick={handleConfirmPayment}
                   onMouseEnter={() => setHoveredBtn('confirm')}
@@ -615,7 +615,7 @@ const styles = {
   },
   saveBtn: {
     padding: '8px 14px',
-    backgroundColor: '#1a7f37',
+    backgroundColor: '#2AABAB',
     color: '#fff',
     border: 'none',
     borderRadius: '8px',
@@ -867,7 +867,7 @@ const styles = {
     gap: '6px',
     width: '100%',
     padding: '10px 16px',
-    backgroundColor: '#1a7f37',
+    backgroundColor: '#2AABAB',
     color: '#fff',
     border: 'none',
     borderRadius: '8px',

@@ -2398,7 +2398,7 @@ const styles = {
   uploadArea: { position: 'relative', padding: '24px', textAlign: 'center', backgroundColor: '#fafbfc' },
   fileInput: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' },
   uploadLabel: { display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' },
-  uploadText: { fontSize: '13px', color: '#2c6ecb', fontWeight: '500' },
+  uploadText: { fontSize: '13px', color: '#2AABAB', fontWeight: '500' },
   uploadHint: { fontSize: '12px', color: '#6d7175', marginTop: '2px' },
   imagesContainer: { padding: '12px', backgroundColor: '#fafbfc' },
   imagesGrid: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
@@ -2443,7 +2443,7 @@ const styles = {
   deleteProductBtn: { padding: '6px 12px', fontSize: '13px', fontWeight: '500', color: '#d72c0d', backgroundColor: '#fff', border: '1px solid #fcd4d4', borderRadius: '6px', cursor: 'pointer' },
   restoreProductBtn: { padding: '6px 12px', fontSize: '13px', fontWeight: '500', color: '#0d5c3d', backgroundColor: '#fff', border: '1px solid #aee9d1', borderRadius: '6px', cursor: 'pointer' },
   backBtn: { padding: '6px 12px', fontSize: '13px', fontWeight: '500', color: '#5c5f62', backgroundColor: '#fff', border: '1px solid #c9cccf', borderRadius: '6px', cursor: 'pointer', boxShadow: '0 1px 0 rgba(0,0,0,0.05), inset 0 -1px 0 rgba(0,0,0,0.1)', transition: 'background-color 0.15s' },
-  editBtn: { padding: '6px 16px', fontSize: '13px', fontWeight: '600', color: '#fff', backgroundColor: '#2c6ecb', border: 'none', borderRadius: '6px', cursor: 'pointer', boxShadow: '0 1px 0 rgba(0,0,0,0.05), inset 0 -1px 0 rgba(0,0,0,0.2)', transition: 'background-color 0.15s' },
+  editBtn: { padding: '6px 16px', fontSize: '13px', fontWeight: '600', color: '#fff', backgroundColor: '#2AABAB', border: 'none', borderRadius: '6px', cursor: 'pointer', boxShadow: '0 1px 0 rgba(0,0,0,0.05), inset 0 -1px 0 rgba(0,0,0,0.2)', transition: 'background-color 0.15s' },
   draftBtn: { padding: '6px 12px', fontSize: '13px', fontWeight: '500', color: '#6d7175', backgroundColor: '#fff', border: '1px solid #c9cccf', borderRadius: '6px', cursor: 'pointer', marginRight: '8px', boxShadow: '0 1px 0 rgba(0,0,0,0.05), inset 0 -1px 0 rgba(0,0,0,0.1)', transition: 'background-color 0.15s' },
   activateBtn: { padding: '6px 12px', fontSize: '13px', fontWeight: '600', color: '#fff', backgroundColor: '#008060', border: 'none', borderRadius: '6px', cursor: 'pointer', marginRight: '8px', boxShadow: '0 1px 0 rgba(0,0,0,0.05), inset 0 -1px 0 rgba(0,0,0,0.2)', transition: 'background-color 0.15s' },
 

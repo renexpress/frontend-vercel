@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import API_URL from '../config/api';
 
@@ -11,6 +11,13 @@ function DeliveryDetail() {
   const [saving, setSaving] = useState(false);
   const [formattedMessage, setFormattedMessage] = useState('');
   const [hoveredBtn, setHoveredBtn] = useState(null);
+  const [historyExpanded, setHistoryExpanded] = useState(false);
+
+  // Memoize status history to prevent lag
+  const memoizedStatusHistory = useMemo(() => {
+    if (!delivery?.status_history) return [];
+    return [...delivery.status_history].reverse();
+  }, [delivery?.status_history]);
 
   // Multiple places with weight
   const [places, setPlaces] = useState([{ number: '', weight: '' }]);
@@ -206,14 +213,14 @@ function DeliveryDetail() {
   };
 
   const statusConfig = {
-    prinyat: { label: 'Принят', bg: '#fef3c7', color: '#92400e' },
-    v_stambule: { label: 'В Стамбуле', bg: '#fce7f3', color: '#9d174d' },
-    otpravlen: { label: 'Отправлен', bg: '#dbeafe', color: '#1d4ed8' },
-    v_puti: { label: 'В пути', bg: '#e0e7ff', color: '#3730a3' },
-    v_moskve: { label: 'В Москве', bg: '#cffafe', color: '#0e7490' },
-    oplata: { label: 'Оплата', bg: '#fef9c3', color: '#854d0e' },
-    dostavka: { label: 'Доставка', bg: '#dcfce7', color: '#166534' },
-    vidan: { label: 'Выдан', bg: '#d1fae5', color: '#065f46' },
+    prinyat: { label: 'Принят', bg: '#2AABAB', color: '#fff' },
+    v_stambule: { label: 'В Стамбуле', bg: '#2AABAB', color: '#fff' },
+    otpravlen: { label: 'Отправлен', bg: '#2AABAB', color: '#fff' },
+    v_puti: { label: 'В пути', bg: '#2AABAB', color: '#fff' },
+    v_moskve: { label: 'В Москве', bg: '#2AABAB', color: '#fff' },
+    oplata: { label: 'Оплата', bg: '#2AABAB', color: '#fff' },
+    dostavka: { label: 'Доставка', bg: '#2AABAB', color: '#fff' },
+    vidan: { label: 'Выдан', bg: '#2AABAB', color: '#fff' },
   };
 
   const getStatusInfo = (status) => {
@@ -238,6 +245,15 @@ function DeliveryDetail() {
 
   const statusInfo = getStatusInfo(delivery.status);
 
+  // Check if delivery is completed (vidan = delivered)
+  const isDeliveryCompleted = delivery.status === 'vidan';
+
+  // Check if receiver has filled required data
+  const receiverDataFilled = delivery.receiver_full_name &&
+                              delivery.receiver_address &&
+                              delivery.receiver_phone &&
+                              delivery.delivery_type;
+
   return (
     <div style={styles.page}>
       {/* Header */}
@@ -251,8 +267,20 @@ function DeliveryDetail() {
           </button>
           <span style={styles.deliveryTypeIcon}>
             {delivery.delivery_type_name ? (
-              delivery.delivery_type_name.toLowerCase().includes('avia') ? '✈️' : '🚚'
-            ) : '❓'}
+              delivery.delivery_type_name.toLowerCase().includes('avia') ? (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="#2AABAB">
+                  <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+                </svg>
+              ) : (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="#2AABAB">
+                  <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+                </svg>
+              )
+            ) : (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="#2AABAB">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
+              </svg>
+            )}
           </span>
           <h1 style={styles.title}>Заказ REN{delivery.receiver}-{delivery.sequential_number || 1}</h1>
           <span style={{
@@ -263,33 +291,37 @@ function DeliveryDetail() {
             {statusInfo.label}
           </span>
         </div>
-        <div style={styles.headerRight}>
-          <button
-            style={{
-              ...styles.btnSecondary,
-              backgroundColor: hoveredBtn === 'delete' ? '#fef2f2' : '#fff',
-              borderColor: hoveredBtn === 'delete' ? '#dc2626' : '#c9cccf',
-              color: hoveredBtn === 'delete' ? '#dc2626' : '#303030',
-            }}
-            onMouseEnter={() => setHoveredBtn('delete')}
-            onMouseLeave={() => setHoveredBtn(null)}
-            onClick={handleDelete}
-          >
-            Удалить
-          </button>
-          <button
-            style={{
-              ...styles.btnPrimary,
-              backgroundColor: hoveredBtn === 'save' ? '#1a1a1a' : '#303030',
-            }}
-            onMouseEnter={() => setHoveredBtn('save')}
-            onMouseLeave={() => setHoveredBtn(null)}
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? 'Сохранение...' : 'Сохранить'}
-          </button>
-        </div>
+        {!isDeliveryCompleted && (
+          <div style={styles.headerRight}>
+            <button
+              style={{
+                ...styles.btnSecondary,
+                backgroundColor: hoveredBtn === 'delete' ? '#fef2f2' : '#fff',
+                borderColor: hoveredBtn === 'delete' ? '#dc2626' : '#c9cccf',
+                color: hoveredBtn === 'delete' ? '#dc2626' : '#303030',
+              }}
+              onMouseEnter={() => setHoveredBtn('delete')}
+              onMouseLeave={() => setHoveredBtn(null)}
+              onClick={handleDelete}
+            >
+              Удалить
+            </button>
+            <button
+              style={{
+                ...styles.btnPrimary,
+                backgroundColor: !receiverDataFilled ? '#ccc' : hoveredBtn === 'save' ? '#239999' : '#2AABAB',
+                cursor: !receiverDataFilled ? 'not-allowed' : 'pointer',
+              }}
+              onMouseEnter={() => setHoveredBtn('save')}
+              onMouseLeave={() => setHoveredBtn(null)}
+              onClick={handleSave}
+              disabled={saving || !receiverDataFilled}
+              title={!receiverDataFilled ? 'Получатель должен сначала заполнить свои данные' : ''}
+            >
+              {saving ? 'Сохранение...' : 'Сохранить'}
+            </button>
+          </div>
+        )}
       </div>
 
       <div style={styles.content}>
@@ -371,110 +403,199 @@ function DeliveryDetail() {
         {/* Right Column - Admin Edit */}
         <div style={styles.rightColumn}>
           <div style={styles.card}>
-            <h2 style={styles.cardTitle}>Заполнить данные (Администратор)</h2>
+            <h2 style={styles.cardTitle}>
+              {isDeliveryCompleted ? 'Данные доставки' : 'Заполнить данные (Администратор)'}
+            </h2>
 
-            <div style={styles.formGroup}>
-              <div style={styles.labelRow}>
-                <label style={styles.label}>Места (груз)</label>
-                <button
-                  type="button"
-                  style={styles.addPlaceBtn}
-                  onClick={addPlace}
-                  title="Добавить место"
-                >
-                  <svg width="14" height="14" viewBox="0 0 20 20" fill="#fff">
-                    <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"/>
-                  </svg>
-                </button>
-              </div>
-              {places.map((place, index) => (
-                <div key={index} style={styles.placeNumberRow}>
-                  <input
-                    type="text"
-                    value={place.number}
-                    onChange={e => updatePlace(index, 'number', e.target.value)}
-                    placeholder={`Место ${index + 1}`}
-                    style={styles.placeInput}
-                  />
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={place.weight}
-                    onChange={e => updatePlace(index, 'weight', e.target.value)}
-                    placeholder="Вес (кг)"
-                    style={styles.weightInput}
-                  />
-                  {places.length > 1 && (
-                    <button
-                      type="button"
-                      style={styles.removePlaceBtn}
-                      onClick={() => removePlace(index)}
-                      title="Удалить место"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 20 20" fill="#dc2626">
-                        <path d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z"/>
-                      </svg>
-                    </button>
+            {isDeliveryCompleted ? (
+              <div style={styles.completedCard}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="#2AABAB" style={{ marginBottom: 12 }}>
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                <span style={styles.completedTitle}>Доставка завершена</span>
+                <span style={styles.completedText}>
+                  Эта доставка была успешно выдана получателю. Редактирование данных недоступно.
+                </span>
+                <div style={styles.completedInfo}>
+                  {/* Parse and display places with weights */}
+                  {delivery.place_number ? (() => {
+                    const placesArr = delivery.place_number.split(',').map(p => p.trim()).filter(p => p);
+                    const parsedPlaces = placesArr.map(p => {
+                      if (p.includes(':')) {
+                        const [num, weight] = p.split(':');
+                        return { number: num.trim(), weight: parseFloat(weight.trim()) || 0 };
+                      }
+                      return { number: p, weight: 0 };
+                    });
+                    const totalWeight = parsedPlaces.reduce((sum, p) => sum + p.weight, 0);
+
+                    return (
+                      <>
+                        {parsedPlaces.map((place, idx) => (
+                          <div key={idx} style={styles.completedInfoRow}>
+                            <span style={styles.completedInfoLabel}>Место {place.number}</span>
+                            <span style={styles.completedInfoValue}>{place.weight ? `${place.weight} кг` : '—'}</span>
+                          </div>
+                        ))}
+                        {parsedPlaces.length > 1 && (
+                          <div style={{ ...styles.completedInfoRow, borderBottom: 'none', paddingTop: '10px', marginTop: '4px', borderTop: '2px solid #2AABAB' }}>
+                            <span style={{ ...styles.completedInfoLabel, fontWeight: '600', color: '#2AABAB' }}>
+                              Итого: {parsedPlaces.length} {parsedPlaces.length === 1 ? 'место' : parsedPlaces.length < 5 ? 'места' : 'мест'}
+                            </span>
+                            <span style={{ ...styles.completedInfoValue, fontWeight: '600', color: '#2AABAB' }}>
+                              {totalWeight > 0 ? `${totalWeight.toFixed(1)} кг` : '—'}
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })() : (
+                    <div style={styles.completedInfoRow}>
+                      <span style={styles.completedInfoLabel}>Места:</span>
+                      <span style={styles.completedInfoValue}>—</span>
+                    </div>
                   )}
-                </div>
-              ))}
-              {places.filter(p => p.number.trim()).length > 0 && (
-                <div style={styles.placeSummary}>
-                  Мест: {places.filter(p => p.number.trim()).length} | Общий вес: {places.reduce((sum, p) => sum + (parseFloat(p.weight) || 0), 0).toFixed(1)} кг
-                </div>
-              )}
-            </div>
-
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Тип груза</label>
-              <input
-                type="text"
-                value={editForm.cargo_type}
-                onChange={e => setEditForm({ ...editForm, cargo_type: e.target.value })}
-                placeholder="Одежда"
-                style={styles.input}
-              />
-            </div>
-
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Дата отправки</label>
-              <input
-                type="date"
-                value={editForm.shipment_date}
-                onChange={e => setEditForm({ ...editForm, shipment_date: e.target.value })}
-                style={styles.input}
-              />
-            </div>
-
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Заметки администратора</label>
-              <textarea
-                value={editForm.admin_notes}
-                onChange={e => setEditForm({ ...editForm, admin_notes: e.target.value })}
-                placeholder="Внутренние заметки..."
-                style={styles.textarea}
-                rows={3}
-              />
-            </div>
-
-            {/* Calculated Price */}
-            {(() => {
-              const totalWeight = places.reduce((sum, p) => sum + (parseFloat(p.weight) || 0), 0);
-              if (totalWeight > 0 && delivery.delivery_type_price) {
-                return (
-                  <div style={styles.priceCard}>
-                    <span style={styles.priceLabel}>Расчётная сумма:</span>
-                    <span style={styles.priceValue}>
-                      {(totalWeight * parseFloat(delivery.delivery_type_price)).toFixed(0)}$
-                    </span>
-                    <span style={styles.priceCalc}>
-                      ({totalWeight.toFixed(1)} кг x {delivery.delivery_type_price}$/кг)
+                  <div style={styles.completedInfoRow}>
+                    <span style={styles.completedInfoLabel}>Тип груза:</span>
+                    <span style={styles.completedInfoValue}>{delivery.cargo_type || '—'}</span>
+                  </div>
+                  <div style={styles.completedInfoRow}>
+                    <span style={styles.completedInfoLabel}>Дата отправки:</span>
+                    <span style={styles.completedInfoValue}>
+                      {delivery.shipment_date ? new Date(delivery.shipment_date).toLocaleDateString('ru-RU') : '—'}
                     </span>
                   </div>
-                );
-              }
-              return null;
-            })()}
+                  {delivery.admin_notes && (
+                    <div style={styles.completedInfoRow}>
+                      <span style={styles.completedInfoLabel}>Заметки:</span>
+                      <span style={styles.completedInfoValue}>{delivery.admin_notes}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : !receiverDataFilled ? (
+              <div style={styles.warningCard}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="#2AABAB" style={{ marginBottom: 8 }}>
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
+                <span style={styles.warningTitle}>Ожидание данных получателя</span>
+                <span style={styles.warningText}>
+                  Получатель должен заполнить свои данные (ФИО, адрес, телефон, тип доставки) прежде чем вы сможете заполнить данные администратора.
+                </span>
+                <div style={styles.missingFields}>
+                  <span style={styles.missingFieldsTitle}>Не заполнено:</span>
+                  {!delivery.receiver_full_name && <span style={styles.missingField}>• ФИО получателя</span>}
+                  {!delivery.receiver_address && <span style={styles.missingField}>• Адрес доставки</span>}
+                  {!delivery.receiver_phone && <span style={styles.missingField}>• Телефон</span>}
+                  {!delivery.delivery_type && <span style={styles.missingField}>• Тип доставки</span>}
+                </div>
+              </div>
+            ) : (
+              <>
+                <div style={styles.formGroup}>
+                  <div style={styles.labelRow}>
+                    <label style={styles.label}>Места (груз)</label>
+                    <button
+                      type="button"
+                      style={styles.addPlaceBtn}
+                      onClick={addPlace}
+                      title="Добавить место"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 20 20" fill="#fff">
+                        <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"/>
+                      </svg>
+                    </button>
+                  </div>
+                  {places.map((place, index) => (
+                    <div key={index} style={styles.placeNumberRow}>
+                      <input
+                        type="text"
+                        value={place.number}
+                        onChange={e => updatePlace(index, 'number', e.target.value)}
+                        placeholder={`Место ${index + 1}`}
+                        style={styles.placeInput}
+                      />
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={place.weight}
+                        onChange={e => updatePlace(index, 'weight', e.target.value)}
+                        placeholder="Вес (кг)"
+                        style={styles.weightInput}
+                      />
+                      {places.length > 1 && (
+                        <button
+                          type="button"
+                          style={styles.removePlaceBtn}
+                          onClick={() => removePlace(index)}
+                          title="Удалить место"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 20 20" fill="#dc2626">
+                            <path d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z"/>
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {places.filter(p => p.number.trim()).length > 0 && (
+                    <div style={styles.placeSummary}>
+                      Мест: {places.filter(p => p.number.trim()).length} | Общий вес: {places.reduce((sum, p) => sum + (parseFloat(p.weight) || 0), 0).toFixed(1)} кг
+                    </div>
+                  )}
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Тип груза</label>
+                  <input
+                    type="text"
+                    value={editForm.cargo_type}
+                    onChange={e => setEditForm({ ...editForm, cargo_type: e.target.value })}
+                    placeholder="Одежда"
+                    style={styles.input}
+                  />
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Дата отправки</label>
+                  <input
+                    type="date"
+                    value={editForm.shipment_date}
+                    onChange={e => setEditForm({ ...editForm, shipment_date: e.target.value })}
+                    style={styles.input}
+                  />
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Заметки администратора</label>
+                  <textarea
+                    value={editForm.admin_notes}
+                    onChange={e => setEditForm({ ...editForm, admin_notes: e.target.value })}
+                    placeholder="Внутренние заметки..."
+                    style={styles.textarea}
+                    rows={3}
+                  />
+                </div>
+
+                {/* Calculated Price */}
+                {(() => {
+                  const totalWeight = places.reduce((sum, p) => sum + (parseFloat(p.weight) || 0), 0);
+                  if (totalWeight > 0 && delivery.delivery_type_price) {
+                    return (
+                      <div style={styles.priceCard}>
+                        <span style={styles.priceLabel}>Расчётная сумма:</span>
+                        <span style={styles.priceValue}>
+                          {(totalWeight * parseFloat(delivery.delivery_type_price)).toFixed(0)}$
+                        </span>
+                        <span style={styles.priceCalc}>
+                          ({totalWeight.toFixed(1)} кг x {delivery.delivery_type_price}$/кг)
+                        </span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+              </>
+            )}
           </div>
 
           {/* Payment Status */}
@@ -492,6 +613,93 @@ function DeliveryDetail() {
                 <span style={styles.totalPrice}>{delivery.total_price}$</span>
               )}
             </div>
+          </div>
+
+          {/* Status History - Collapsible */}
+          <div style={styles.card}>
+            <div
+              style={styles.historyHeaderRow}
+              onClick={() => setHistoryExpanded(!historyExpanded)}
+            >
+              <h2 style={{ ...styles.cardTitle, margin: 0, cursor: 'pointer' }}>
+                История статуса {memoizedStatusHistory.length > 0 && `(${memoizedStatusHistory.length})`}
+              </h2>
+              <button style={styles.historyExpandBtn}>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 20 20"
+                  fill="#6d7175"
+                  style={{ transform: historyExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
+                >
+                  <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/>
+                </svg>
+              </button>
+            </div>
+            {historyExpanded && (
+              memoizedStatusHistory.length > 0 ? (
+                <div style={styles.historyList}>
+                  {memoizedStatusHistory.map((history, index) => {
+                    const historyStatusInfo = getStatusInfo(history.to_status);
+                    return (
+                      <div key={history.id || index} style={styles.historyItem}>
+                        <div style={styles.historyDot} />
+                        {index < memoizedStatusHistory.length - 1 && <div style={styles.historyLine} />}
+                        <div style={styles.historyContent}>
+                          <div style={styles.historyHeader}>
+                            <span style={styles.historyStatus}>
+                              {history.to_status_display || historyStatusInfo.label}
+                            </span>
+                            <span style={styles.historyDate}>
+                              {new Date(history.created_at).toLocaleDateString('ru-RU', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                          </div>
+                          {history.employee_name && (
+                            <span style={styles.historyEmployee}>
+                              Сотрудник: {history.employee_name}
+                            </span>
+                          )}
+                          {history.notes && (
+                            <div style={styles.historyCommentBox}>
+                              <span style={styles.historyCommentLabel}>Комментарий:</span>
+                              <span style={styles.historyCommentText}>{history.notes}</span>
+                            </div>
+                          )}
+                          {history.photos && history.photos.length > 0 && (
+                            <div style={styles.historyPhotos}>
+                              {history.photos.map((photo, photoIdx) => (
+                                <img
+                                  key={photo.id || photoIdx}
+                                  src={photo.photo_url}
+                                  alt="Status photo"
+                                  style={styles.historyPhoto}
+                                  loading="lazy"
+                                  decoding="async"
+                                  onClick={() => window.open(photo.photo_url, '_blank')}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={styles.historyEmpty}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="#2AABAB" style={{ opacity: 0.5, marginBottom: 8 }}>
+                    <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
+                  </svg>
+                  <span style={styles.historyEmptyText}>История статусов пуста</span>
+                </div>
+              )
+            )}
           </div>
         </div>
       </div>
@@ -551,7 +759,8 @@ const styles = {
     cursor: 'pointer',
   },
   deliveryTypeIcon: {
-    fontSize: '24px',
+    display: 'flex',
+    alignItems: 'center',
     marginRight: '8px',
   },
   title: {
@@ -809,6 +1018,215 @@ const styles = {
     whiteSpace: 'pre-wrap',
     margin: 0,
     overflow: 'auto',
+  },
+
+  // Warning card styles
+  warningCard: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    textAlign: 'center',
+    padding: '24px 16px',
+    backgroundColor: '#E8F7F7',
+    borderRadius: '8px',
+    border: '1px solid #2AABAB',
+  },
+  warningTitle: {
+    fontSize: '15px',
+    fontWeight: '600',
+    color: '#2AABAB',
+    marginBottom: '8px',
+  },
+  warningText: {
+    fontSize: '13px',
+    color: '#239999',
+    lineHeight: '1.5',
+    marginBottom: '16px',
+  },
+  missingFields: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    width: '100%',
+    padding: '12px',
+    backgroundColor: '#D0F0F0',
+    borderRadius: '6px',
+  },
+  missingFieldsTitle: {
+    fontSize: '12px',
+    fontWeight: '600',
+    color: '#2AABAB',
+    marginBottom: '6px',
+  },
+  missingField: {
+    fontSize: '12px',
+    color: '#239999',
+    marginBottom: '2px',
+  },
+
+  // Completed delivery card styles
+  completedCard: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    textAlign: 'center',
+    padding: '24px 16px',
+    backgroundColor: '#E8F7F7',
+    borderRadius: '8px',
+    border: '1px solid #2AABAB',
+  },
+  completedTitle: {
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#2AABAB',
+    marginBottom: '8px',
+  },
+  completedText: {
+    fontSize: '13px',
+    color: '#239999',
+    lineHeight: '1.5',
+    marginBottom: '16px',
+  },
+  completedInfo: {
+    width: '100%',
+    padding: '12px',
+    backgroundColor: '#D0F0F0',
+    borderRadius: '6px',
+    textAlign: 'left',
+  },
+  completedInfoRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: '6px 0',
+    borderBottom: '1px solid #B8E8E8',
+  },
+  completedInfoLabel: {
+    fontSize: '12px',
+    fontWeight: '500',
+    color: '#239999',
+  },
+  completedInfoValue: {
+    fontSize: '13px',
+    fontWeight: '500',
+    color: '#1a1a1a',
+    textAlign: 'right',
+    maxWidth: '60%',
+  },
+
+  // Status History styles
+  historyHeaderRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    cursor: 'pointer',
+    paddingBottom: '0',
+    marginBottom: '0',
+  },
+  historyExpandBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '28px',
+    height: '28px',
+    backgroundColor: 'transparent',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+  },
+  historyList: {
+    display: 'flex',
+    flexDirection: 'column',
+    marginTop: '16px',
+  },
+  historyItem: {
+    position: 'relative',
+    paddingLeft: '24px',
+    paddingBottom: '16px',
+  },
+  historyDot: {
+    position: 'absolute',
+    left: 0,
+    top: '4px',
+    width: '10px',
+    height: '10px',
+    borderRadius: '50%',
+    backgroundColor: '#2AABAB',
+  },
+  historyLine: {
+    position: 'absolute',
+    left: '4px',
+    top: '18px',
+    bottom: 0,
+    width: '2px',
+    backgroundColor: '#E8F7F7',
+  },
+  historyContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+  },
+  historyHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  historyStatus: {
+    fontSize: '14px',
+    fontWeight: '600',
+    color: '#2AABAB',
+  },
+  historyDate: {
+    fontSize: '12px',
+    color: '#6d7175',
+  },
+  historyEmployee: {
+    fontSize: '12px',
+    color: '#6d7175',
+  },
+  historyCommentBox: {
+    marginTop: '8px',
+    padding: '10px',
+    backgroundColor: '#F5F5F5',
+    borderRadius: '8px',
+  },
+  historyCommentLabel: {
+    display: 'block',
+    fontSize: '11px',
+    color: '#999',
+    marginBottom: '4px',
+  },
+  historyCommentText: {
+    fontSize: '13px',
+    color: '#1A1A1A',
+    lineHeight: '1.4',
+  },
+  historyPhotos: {
+    display: 'flex',
+    gap: '8px',
+    marginTop: '8px',
+    flexWrap: 'wrap',
+  },
+  historyPhoto: {
+    width: '60px',
+    height: '60px',
+    borderRadius: '6px',
+    objectFit: 'cover',
+    cursor: 'pointer',
+    border: '1px solid #e1e3e5',
+    backgroundColor: '#e5e7eb',
+    transition: 'opacity 0.3s ease',
+  },
+  historyEmpty: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: '24px',
+    color: '#6d7175',
+  },
+  historyEmptyText: {
+    fontSize: '13px',
+    color: '#2AABAB',
   },
 };
 

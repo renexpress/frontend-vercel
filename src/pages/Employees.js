@@ -5,7 +5,7 @@ import API_URL from '../config/api';
 const ROLE_CONFIG = {
   warehouse_istanbul: { label: 'Склад Стамбул', color: '#3B82F6', bg: '#DBEAFE' },
   warehouse_moscow: { label: 'Склад Москва', color: '#8B5CF6', bg: '#EDE9FE' },
-  courier: { label: 'Курьер', color: '#FF6B35', bg: '#FFF4F0' },
+  courier: { label: 'Курьер', color: '#2AABAB', bg: '#E0F5F5' },
   manager: { label: 'Менеджер', color: '#10B981', bg: '#D1FAE5' },
 };
 
@@ -386,11 +386,11 @@ function Employees() {
                       <span style={{
                         ...styles.statusBadge,
                         backgroundColor: employee.is_active ? '#e3f4e8' : '#fef2f2',
-                        color: employee.is_active ? '#1a7f37' : '#d72c0d',
+                        color: employee.is_active ? '#2AABAB' : '#d72c0d',
                       }}>
                         <span style={{
                           ...styles.statusDot,
-                          backgroundColor: employee.is_active ? '#1a7f37' : '#d72c0d',
+                          backgroundColor: employee.is_active ? '#2AABAB' : '#d72c0d',
                         }}/>
                         {employee.is_active ? 'Активен' : 'Неактивен'}
                       </span>

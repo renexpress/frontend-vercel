@@ -29,7 +29,8 @@ function Layout({ children, setIsAuthenticated }) {
     navigate('/login');
   };
 
-  const c = '#303030';
+  const PRIMARY = '#2AABAB';
+  const c = '#2AABAB';
 
   const icons = {
     home: (
@@ -132,17 +133,17 @@ function Layout({ children, setIsAuthenticated }) {
 
   const subIcons = {
     draft: (
-      <svg width="16" height="16" viewBox="0 0 20 20" fill="#616161">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill={PRIMARY}>
         <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
       </svg>
     ),
     users: (
-      <svg width="16" height="16" viewBox="0 0 20 20" fill="#616161">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill={PRIMARY}>
         <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
       </svg>
     ),
     scissors: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#616161" strokeWidth="2">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={PRIMARY} strokeWidth="2">
         <circle cx="6" cy="6" r="3" />
         <circle cx="6" cy="18" r="3" />
         <line x1="20" y1="4" x2="8.12" y2="15.88" />
@@ -152,27 +153,38 @@ function Layout({ children, setIsAuthenticated }) {
     ),
   };
 
-  const NavItem = ({ id, path, label, icon, active }) => (
-    <div
-      onClick={() => navigate(path)}
-      onMouseEnter={() => setHovered(id)}
-      onMouseLeave={() => setHovered(null)}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        padding: '6px 10px',
-        margin: '1px 0',
-        borderRadius: 8,
-        cursor: 'pointer',
-        background: active ? '#fff' : hovered === id ? '#ebebeb' : 'transparent',
-        boxShadow: active ? '0 1px 1px rgba(0,0,0,0.08)' : 'none',
-      }}
-    >
-      {icons[icon]}
-      <span style={{ fontSize: 14, color: '#303030', fontWeight: 500 }}>{label}</span>
-    </div>
-  );
+  const NavItem = ({ id, path, label, icon, active }) => {
+    const iconWithColor = icons[icon] ? React.cloneElement(icons[icon], {
+      props: { ...icons[icon].props },
+      children: React.Children.map(icons[icon].props.children, child =>
+        child ? React.cloneElement(child, { fill: active ? '#fff' : PRIMARY }) : child
+      )
+    }) : null;
+
+    return (
+      <div
+        onClick={() => navigate(path)}
+        onMouseEnter={() => setHovered(id)}
+        onMouseLeave={() => setHovered(null)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '6px 10px',
+          margin: '1px 0',
+          borderRadius: 8,
+          cursor: 'pointer',
+          background: active ? PRIMARY : hovered === id ? '#E0F5F5' : 'transparent',
+          boxShadow: active ? '0 1px 3px rgba(42,171,171,0.3)' : 'none',
+        }}
+      >
+        <svg width="18" height="18" viewBox={icons[icon]?.props?.viewBox || "0 0 24 24"} fill={active ? '#fff' : PRIMARY}>
+          {icons[icon]?.props?.children}
+        </svg>
+        <span style={{ fontSize: 14, color: active ? '#fff' : PRIMARY, fontWeight: 500 }}>{label}</span>
+      </div>
+    );
+  };
 
   const SubItem = ({ label, path, icon, active }) => (
     <div
@@ -185,12 +197,12 @@ function Layout({ children, setIsAuthenticated }) {
         gap: 8,
         padding: '5px 10px 5px 38px',
         fontSize: 13,
-        color: active ? '#303030' : '#616161',
+        color: active ? '#fff' : PRIMARY,
         cursor: 'pointer',
         fontWeight: active ? 500 : 400,
         borderRadius: 6,
-        backgroundColor: active ? '#fff' : hovered === `sub-${path}` ? '#ebebeb' : 'transparent',
-        boxShadow: active ? '0 1px 1px rgba(0,0,0,0.06)' : 'none',
+        backgroundColor: active ? PRIMARY : hovered === `sub-${path}` ? '#E0F5F5' : 'transparent',
+        boxShadow: active ? '0 1px 3px rgba(42,171,171,0.3)' : 'none',
         margin: '1px 0',
       }}
     >
@@ -207,37 +219,50 @@ function Layout({ children, setIsAuthenticated }) {
         gap: 3,
         padding: '16px 10px 6px',
         fontSize: 12,
-        color: '#616161',
+        color: PRIMARY,
         fontWeight: 400,
         cursor: 'pointer',
+        opacity: 0.7,
       }}
     >
       <span>{label}</span>
       <svg width="8" height="8" viewBox="0 0 8 8">
-        <path d="M2 1l4 3-4 3" fill="none" stroke="#616161" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M2 1l4 3-4 3" fill="none" stroke={PRIMARY} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     </div>
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: '#1a1a1a', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: PRIMARY, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       {/* Header */}
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 56, background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', zIndex: 100 }}>
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 56, background: PRIMARY, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', zIndex: 100 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <svg width="32" height="32">
-            <rect width="32" height="32" rx="8" fill="#000"/>
-            <text x="16" y="21" fontFamily="Arial" fontSize="18" fontWeight="700" fill="#fff" textAnchor="middle">R</text>
+            <rect width="32" height="32" rx="8" fill="#fff"/>
+            <text x="16" y="16" fontFamily="Arial" fontSize="18" fontWeight="700" fill="#2AABAB" textAnchor="middle" dominantBaseline="central">R</text>
           </svg>
-          <span style={{ color: '#fff', fontSize: 17, fontWeight: 600, letterSpacing: '-0.3px' }}>renexpress</span>
+          <span style={{ color: '#fff', fontSize: 17, fontWeight: 600, letterSpacing: '-0.3px' }}>RENEXPRESS</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#303030', borderRadius: 8, padding: '8px 12px', width: 480 }}>
+        <div className="header-search-box" style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '8px 12px', width: 480, cursor: 'text' }}>
           <svg width="16" height="16" viewBox="0 0 20 20">
-            <circle cx="9" cy="9" r="6" fill="none" stroke="#808080" strokeWidth="1.5"/>
-            <path d="M13.5 13.5l4 4" stroke="#808080" strokeWidth="1.5" strokeLinecap="round"/>
+            <circle cx="9" cy="9" r="6" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="1.5"/>
+            <path d="M13.5 13.5l4 4" stroke="rgba(255,255,255,0.9)" strokeWidth="1.5" strokeLinecap="round"/>
           </svg>
-          <span style={{ color: '#808080', fontSize: 14, flex: 1 }}>Поиск</span>
-          <span style={{ background: '#4a4a4a', color: '#909090', fontSize: 11, padding: '2px 6px', borderRadius: 4 }}>⌘</span>
-          <span style={{ background: '#4a4a4a', color: '#909090', fontSize: 11, padding: '2px 6px', borderRadius: 4 }}>K</span>
+          <input
+            type="text"
+            placeholder="Поиск"
+            className="header-search-input"
+            style={{
+              flex: 1,
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              color: '#fff',
+              fontSize: 14,
+            }}
+          />
+          <span style={{ background: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.9)', fontSize: 11, padding: '2px 6px', borderRadius: 4 }}>⌘</span>
+          <span style={{ background: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.9)', fontSize: 11, padding: '2px 6px', borderRadius: 4 }}>K</span>
         </div>
         <div style={{ position: 'relative' }}>
           <div
@@ -246,8 +271,8 @@ function Layout({ children, setIsAuthenticated }) {
               width: 32,
               height: 32,
               borderRadius: 8,
-              background: '#36b37e',
-              color: '#fff',
+              background: '#fff',
+              color: PRIMARY,
               fontSize: 12,
               fontWeight: 600,
               display: 'flex',
@@ -258,7 +283,7 @@ function Layout({ children, setIsAuthenticated }) {
               transform: showUserMenu ? 'scale(0.95)' : 'scale(1)',
             }}
           >
-            RE
+            REN
           </div>
 
           {/* User Dropdown Menu */}
@@ -322,9 +347,9 @@ function Layout({ children, setIsAuthenticated }) {
       </div>
 
       {/* Body */}
-      <div style={{ position: 'fixed', top: 56, left: 0, right: 0, bottom: 0, background: '#f6f6f7', borderTopLeftRadius: 16, borderTopRightRadius: 16, display: 'flex' }}>
+      <div style={{ position: 'fixed', top: 56, left: 0, right: 0, bottom: 0, background: '#f6f6f7', borderTopLeftRadius: 24, borderTopRightRadius: 24, display: 'flex', overflow: 'hidden' }}>
         {/* Sidebar */}
-        <div style={{ width: 240, height: '100%', background: '#f6f6f7', padding: '8px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ width: 240, height: '100%', background: '#f6f6f7', padding: '8px', paddingTop: '16px', display: 'flex', flexDirection: 'column', borderTopLeftRadius: 24 }}>
           <div style={{ flex: 1, overflowY: 'auto' }}>
             {items.map(item => {
               const itemActive = isItemOrSubActive(item);
@@ -353,7 +378,7 @@ function Layout({ children, setIsAuthenticated }) {
         </div>
 
         {/* Main */}
-        <div style={{ flex: 1, padding: '0 8px 8px 0', overflowY: 'auto' }}>
+        <div style={{ flex: 1, padding: '8px 8px 8px 0', overflowY: 'auto', borderTopRightRadius: 24 }}>
           {children}
         </div>
       </div>

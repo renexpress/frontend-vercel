@@ -126,14 +126,14 @@ function Deliveries() {
   ];
 
   const statusConfig = {
-    prinyat: { label: 'Принят', bg: '#fef3c7', color: '#92400e' },
-    v_stambule: { label: 'В Стамбуле', bg: '#fce7f3', color: '#9d174d' },
-    otpravlen: { label: 'Отправлен', bg: '#dbeafe', color: '#1d4ed8' },
-    v_puti: { label: 'В пути', bg: '#e0e7ff', color: '#3730a3' },
-    v_moskve: { label: 'В Москве', bg: '#cffafe', color: '#0e7490' },
-    oplata: { label: 'Оплата', bg: '#fef9c3', color: '#854d0e' },
-    dostavka: { label: 'Доставка', bg: '#dcfce7', color: '#166534' },
-    vidan: { label: 'Выдан', bg: '#d1fae5', color: '#065f46' },
+    prinyat: { label: 'Принят', bg: '#2AABAB', color: '#fff' },
+    v_stambule: { label: 'В Стамбуле', bg: '#2AABAB', color: '#fff' },
+    otpravlen: { label: 'Отправлен', bg: '#2AABAB', color: '#fff' },
+    v_puti: { label: 'В пути', bg: '#2AABAB', color: '#fff' },
+    v_moskve: { label: 'В Москве', bg: '#2AABAB', color: '#fff' },
+    oplata: { label: 'Оплата', bg: '#2AABAB', color: '#fff' },
+    dostavka: { label: 'Доставка', bg: '#2AABAB', color: '#fff' },
+    vidan: { label: 'Выдан', bg: '#2AABAB', color: '#fff' },
   };
 
   const getStatusInfo = (status) => {
@@ -194,15 +194,15 @@ function Deliveries() {
       {/* Header */}
       <div style={styles.header}>
         <div style={styles.titleRow}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="#303030">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#2AABAB">
             <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
           </svg>
-          <h1 style={styles.title}>Доставки RenCargo</h1>
+          <h1 style={styles.title}>Доставки RENCARGO</h1>
         </div>
         <button
           style={{
             ...styles.btnPrimary,
-            backgroundColor: hoveredBtn === 'add' ? '#1a1a1a' : '#303030',
+            backgroundColor: hoveredBtn === 'add' ? '#239999' : '#2AABAB',
           }}
           onMouseEnter={() => setHoveredBtn('add')}
           onMouseLeave={() => setHoveredBtn(null)}
@@ -231,8 +231,8 @@ function Deliveries() {
             <button
               style={{
                 ...styles.iconBtn,
-                backgroundColor: showSearch ? '#e4e5e7' : hoveredBtn === 'search' ? '#f1f1f1' : '#fff',
-                borderColor: showSearch ? '#8c9196' : '#c9cccf',
+                backgroundColor: showSearch ? '#e8f7f7' : hoveredBtn === 'search' ? '#f1f1f1' : '#fff',
+                borderColor: showSearch ? '#2AABAB' : '#c9cccf',
               }}
               onClick={() => setShowSearch(!showSearch)}
               onMouseEnter={() => setHoveredBtn('search')}
@@ -246,8 +246,8 @@ function Deliveries() {
               <button
                 style={{
                   ...styles.iconBtn,
-                  backgroundColor: showSort ? '#e4e5e7' : hoveredBtn === 'sort' ? '#f1f1f1' : '#fff',
-                  borderColor: showSort ? '#8c9196' : '#c9cccf',
+                  backgroundColor: showSort ? '#e8f7f7' : hoveredBtn === 'sort' ? '#f1f1f1' : '#fff',
+                  borderColor: showSort ? '#2AABAB' : '#c9cccf',
                 }}
                 onClick={() => setShowSort(!showSort)}
                 onMouseEnter={() => setHoveredBtn('sort')}
@@ -272,7 +272,7 @@ function Deliveries() {
                       }}
                     >
                       {sortBy === opt.id && (
-                        <svg width="14" height="14" viewBox="0 0 20 20" fill="#303030" style={{ marginRight: 8 }}>
+                        <svg width="14" height="14" viewBox="0 0 20 20" fill="#2AABAB" style={{ marginRight: 8 }}>
                           <path d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z"/>
                         </svg>
                       )}
@@ -320,9 +320,9 @@ function Deliveries() {
                     onClick={() => toggleFilter(opt.id)}
                     style={{
                       ...styles.filterChip,
-                      backgroundColor: searchFilters[opt.id] ? '#303030' : '#fff',
-                      color: searchFilters[opt.id] ? '#fff' : '#303030',
-                      borderColor: searchFilters[opt.id] ? '#303030' : '#c9cccf',
+                      backgroundColor: searchFilters[opt.id] ? '#2AABAB' : '#fff',
+                      color: searchFilters[opt.id] ? '#fff' : '#2AABAB',
+                      borderColor: '#2AABAB',
                     }}
                   >
                     {opt.label}
@@ -360,7 +360,7 @@ function Deliveries() {
                   key={delivery.id}
                   style={{
                     ...styles.tr,
-                    backgroundColor: hoveredRow === idx ? '#f6f6f7' : '#fff',
+                    backgroundColor: hoveredRow === idx ? '#f0fafa' : '#fff',
                   }}
                   onMouseEnter={() => setHoveredRow(idx)}
                   onMouseLeave={() => setHoveredRow(null)}
@@ -406,7 +406,7 @@ function Deliveries() {
 
         {filteredDeliveries.length === 0 && (
           <div style={styles.empty}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="#8c9196" style={{ marginBottom: 12 }}>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="#2AABAB" style={{ marginBottom: 12, opacity: 0.5 }}>
               <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4z"/>
             </svg>
             <p style={styles.emptyTitle}>Доставки не найдены</p>
@@ -485,9 +485,14 @@ function Deliveries() {
   );
 }
 
+const PRIMARY_COLOR = '#2AABAB';
+const PRIMARY_DARK = '#239999';
+
 const styles = {
   page: {
     padding: '16px 20px',
+    backgroundColor: '#fff',
+    minHeight: '100vh',
   },
   loading: {
     display: 'flex',
@@ -499,7 +504,7 @@ const styles = {
     width: '40px',
     height: '40px',
     border: '4px solid #e3e3e3',
-    borderTopColor: '#333',
+    borderTopColor: PRIMARY_COLOR,
     borderRadius: '50%',
     animation: 'spin 1s linear infinite',
   },
@@ -518,14 +523,14 @@ const styles = {
   title: {
     fontSize: '18px',
     fontWeight: '600',
-    color: '#303030',
+    color: PRIMARY_COLOR,
     margin: 0,
   },
   btnPrimary: {
     display: 'inline-flex',
     alignItems: 'center',
     padding: '8px 16px',
-    backgroundColor: '#303030',
+    backgroundColor: PRIMARY_COLOR,
     border: 'none',
     borderRadius: '8px',
     fontSize: '13px',
@@ -570,10 +575,10 @@ const styles = {
     padding: '10px 12px',
     backgroundColor: 'transparent',
     border: 'none',
-    borderBottom: '2px solid #303030',
+    borderBottom: '2px solid ' + PRIMARY_COLOR,
     fontSize: '13px',
     fontWeight: '600',
-    color: '#303030',
+    color: PRIMARY_COLOR,
     cursor: 'pointer',
     whiteSpace: 'nowrap',
   },
@@ -628,7 +633,7 @@ const styles = {
   },
   receiverUsername: {
     fontWeight: '600',
-    color: '#303030',
+    color: PRIMARY_COLOR,
   },
   receiverName: {
     fontSize: '12px',
@@ -652,7 +657,7 @@ const styles = {
   emptyTitle: {
     fontSize: '15px',
     fontWeight: '600',
-    color: '#303030',
+    color: PRIMARY_COLOR,
     margin: '0 0 4px 0',
   },
   emptyText: {
@@ -724,7 +729,7 @@ const styles = {
     padding: '4px 10px',
     fontSize: '12px',
     fontWeight: '500',
-    border: '1px solid #c9cccf',
+    border: '1px solid ' + PRIMARY_COLOR,
     borderRadius: '16px',
     cursor: 'pointer',
     transition: 'all 0.15s',
@@ -787,7 +792,7 @@ const styles = {
   modalTitle: {
     fontSize: '18px',
     fontWeight: '600',
-    color: '#303030',
+    color: PRIMARY_COLOR,
     margin: '0 0 20px 0',
   },
   formGroup: {
@@ -818,11 +823,11 @@ const styles = {
   },
   renPrefix: {
     padding: '10px 12px',
-    backgroundColor: '#f6f6f7',
-    color: '#202223',
+    backgroundColor: PRIMARY_COLOR,
+    color: '#fff',
     fontWeight: '600',
     fontSize: '14px',
-    borderRight: '1px solid #c9cccf',
+    borderRight: '1px solid ' + PRIMARY_COLOR,
   },
   renInput: {
     flex: 1,
@@ -856,11 +861,11 @@ const styles = {
   btnSecondary: {
     padding: '8px 16px',
     backgroundColor: '#fff',
-    border: '1px solid #c9cccf',
+    border: '1px solid ' + PRIMARY_COLOR,
     borderRadius: '8px',
     fontSize: '13px',
     fontWeight: '500',
-    color: '#303030',
+    color: PRIMARY_COLOR,
     cursor: 'pointer',
   },
 };

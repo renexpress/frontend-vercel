@@ -6,7 +6,7 @@ import API_URL from '../config/api';
 const ROLE_CONFIG = {
   warehouse_istanbul: { label: 'Склад Стамбул', color: '#3B82F6', bg: '#DBEAFE' },
   warehouse_moscow: { label: 'Склад Москва', color: '#8B5CF6', bg: '#EDE9FE' },
-  courier: { label: 'Курьер', color: '#FF6B35', bg: '#FFF4F0' },
+  courier: { label: 'Курьер', color: '#2AABAB', bg: '#E0F5F5' },
   manager: { label: 'Менеджер', color: '#10B981', bg: '#D1FAE5' },
 };
 
@@ -248,11 +248,11 @@ function EmployeeDetail() {
                   <span style={{
                     ...styles.statusBadge,
                     backgroundColor: employee.is_active ? '#e3f4e8' : '#fef2f2',
-                    color: employee.is_active ? '#1a7f37' : '#d72c0d',
+                    color: employee.is_active ? '#2AABAB' : '#d72c0d',
                   }}>
                     <span style={{
                       ...styles.statusDot,
-                      backgroundColor: employee.is_active ? '#1a7f37' : '#d72c0d',
+                      backgroundColor: employee.is_active ? '#2AABAB' : '#d72c0d',
                     }}/>
                     {employee.is_active ? 'Активен' : 'Неактивен'}
                   </span>
@@ -417,32 +417,32 @@ function EmployeeDetail() {
             </div>
             <div style={styles.permissionsList}>
               <div style={styles.permissionItem}>
-                <svg width="16" height="16" viewBox="0 0 20 20" fill="#1a7f37">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="#2AABAB">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                 </svg>
                 <span>Просмотр заказов</span>
               </div>
               <div style={styles.permissionItem}>
-                <svg width="16" height="16" viewBox="0 0 20 20" fill="#1a7f37">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="#2AABAB">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                 </svg>
                 <span>Сканирование QR-кодов</span>
               </div>
               <div style={styles.permissionItem}>
-                <svg width="16" height="16" viewBox="0 0 20 20" fill="#1a7f37">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="#2AABAB">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                 </svg>
                 <span>Обновление статусов заказов</span>
               </div>
               <div style={styles.permissionItem}>
-                <svg width="16" height="16" viewBox="0 0 20 20" fill="#1a7f37">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="#2AABAB">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                 </svg>
                 <span>Добавление фото к заказам</span>
               </div>
               {(employee.role === 'manager' || employee.role === 'courier') && (
                 <div style={styles.permissionItem}>
-                  <svg width="16" height="16" viewBox="0 0 20 20" fill="#1a7f37">
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="#2AABAB">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
                   </svg>
                   <span>Маршруты доставки</span>
@@ -619,7 +619,7 @@ const styles = {
     alignItems: 'center',
     gap: '6px',
     padding: '8px 14px',
-    backgroundColor: '#1a7f37',
+    backgroundColor: '#2AABAB',
     color: '#fff',
     border: 'none',
     borderRadius: '8px',
@@ -712,7 +712,7 @@ const styles = {
     width: '56px',
     height: '56px',
     borderRadius: '12px',
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#2AABAB',
     color: '#fff',
     display: 'flex',
     alignItems: 'center',
@@ -993,7 +993,7 @@ const styles = {
   modalSaveBtn: {
     flex: 1,
     padding: '10px 16px',
-    backgroundColor: '#FF6B35',
+    backgroundColor: '#2AABAB',
     border: 'none',
     borderRadius: '8px',
     fontSize: '14px',

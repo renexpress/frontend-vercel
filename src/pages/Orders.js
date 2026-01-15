@@ -183,10 +183,10 @@ function Orders() {
       {/* Header */}
       <div style={styles.header}>
         <div style={styles.titleRow}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="#303030">
-            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.4-1.4 3.6 3.6 7.6-7.6L21 9l-9 8z"/>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#2AABAB">
+            <path d="M18 6h-2c0-2.21-1.79-4-4-4S8 3.79 8 6H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6-2c1.1 0 2 .9 2 2h-4c0-1.1.9-2 2-2zm6 16H6V8h2v2c0 .55.45 1 1 1s1-.45 1-1V8h4v2c0 .55.45 1 1 1s1-.45 1-1V8h2v12z"/>
           </svg>
-          <h1 style={styles.title}>Заказы</h1>
+          <h1 style={styles.title}>RENSHOPPING Заказы</h1>
         </div>
       </div>
 
@@ -301,9 +301,9 @@ function Orders() {
                     onClick={() => toggleFilter(opt.id)}
                     style={{
                       ...styles.filterChip,
-                      backgroundColor: searchFilters[opt.id] ? '#303030' : '#fff',
-                      color: searchFilters[opt.id] ? '#fff' : '#303030',
-                      borderColor: searchFilters[opt.id] ? '#303030' : '#c9cccf',
+                      backgroundColor: searchFilters[opt.id] ? '#2AABAB' : '#fff',
+                      color: searchFilters[opt.id] ? '#fff' : '#2AABAB',
+                      borderColor: searchFilters[opt.id] ? '#2AABAB' : '#c9cccf',
                     }}
                   >
                     {opt.label}
@@ -323,9 +323,6 @@ function Orders() {
         <table style={styles.table}>
           <thead>
             <tr>
-              <th style={styles.thCheck}>
-                <input type="checkbox" style={styles.checkbox} />
-              </th>
               <th style={styles.th}>№ Заказа</th>
               <th style={styles.th}>Дата</th>
               <th style={styles.th}>Клиент</th>
@@ -344,15 +341,12 @@ function Orders() {
                   key={order.id}
                   style={{
                     ...styles.tr,
-                    backgroundColor: hoveredRow === idx ? '#f6f6f7' : '#fff',
+                    backgroundColor: hoveredRow === idx ? '#f0fafa' : '#fff',
                   }}
                   onMouseEnter={() => setHoveredRow(idx)}
                   onMouseLeave={() => setHoveredRow(null)}
                   onClick={() => navigate(`/orders/${order.id}`)}
                 >
-                  <td style={styles.tdCheck} onClick={e => e.stopPropagation()}>
-                    <input type="checkbox" style={styles.checkbox} />
-                  </td>
                   <td style={styles.td}>
                     <span style={styles.orderNumber}>#{order.order_number}</span>
                   </td>
@@ -373,8 +367,8 @@ function Orders() {
                   <td style={styles.td}>
                     <span style={{
                       ...styles.typeBadge,
-                      backgroundColor: order.order_type === 'roznica' ? '#dbeafe' : '#fef3c7',
-                      color: order.order_type === 'roznica' ? '#1d4ed8' : '#92400e',
+                      backgroundColor: '#E0F5F5',
+                      color: '#2AABAB',
                     }}>
                       {order.order_type === 'roznica' ? 'Розница' : 'Оптом'}
                     </span>
@@ -391,8 +385,8 @@ function Orders() {
                   <td style={styles.td}>
                     <span style={{
                       ...styles.paymentBadge,
-                      backgroundColor: order.is_paid ? '#d1fae5' : '#fef3c7',
-                      color: order.is_paid ? '#065f46' : '#92400e',
+                      backgroundColor: '#E0F5F5',
+                      color: '#2AABAB',
                     }}>
                       {order.is_paid ? 'Оплачен' : 'Ожидает'}
                     </span>
@@ -400,8 +394,8 @@ function Orders() {
                   <td style={styles.td}>
                     <span style={{
                       ...styles.statusBadge,
-                      backgroundColor: statusInfo.bg,
-                      color: statusInfo.color,
+                      backgroundColor: '#E0F5F5',
+                      color: '#2AABAB',
                     }}>
                       {statusInfo.label}
                     </span>
@@ -459,7 +453,7 @@ const styles = {
   title: {
     fontSize: '18px',
     fontWeight: '600',
-    color: '#303030',
+    color: '#2AABAB',
     margin: 0,
   },
 
@@ -498,10 +492,10 @@ const styles = {
     padding: '10px 12px',
     backgroundColor: 'transparent',
     border: 'none',
-    borderBottom: '2px solid #303030',
+    borderBottom: '2px solid #2AABAB',
     fontSize: '13px',
     fontWeight: '600',
-    color: '#303030',
+    color: '#2AABAB',
     cursor: 'pointer',
     whiteSpace: 'nowrap',
   },
@@ -565,7 +559,7 @@ const styles = {
 
   orderNumber: {
     fontWeight: '600',
-    color: '#2c6ecb',
+    color: '#2AABAB',
   },
   dateText: {
     color: '#6d7175',

@@ -15,14 +15,14 @@ function PoshivOrders() {
   const sortRef = useRef(null);
 
   const STATUS_CONFIG = {
-    draft: { label: 'Черновик', bg: '#f6f6f7', color: '#6d7175' },
-    awaiting_payment: { label: 'Ожидание оплаты', bg: '#fff8e6', color: '#b88c1a' },
-    confirmed: { label: 'Подтверждён', bg: '#eef2ff', color: '#5c6ac4' },
-    in_production: { label: 'В производстве', bg: '#fce7f3', color: '#9d174d' },
-    ready: { label: 'Готов', bg: '#e0f5f5', color: '#00a0ac' },
-    shipped: { label: 'Отправлен', bg: '#dbeafe', color: '#1d4ed8' },
-    delivered: { label: 'Доставлен', bg: '#e3f4e8', color: '#1a7f37' },
-    cancelled: { label: 'Отменён', bg: '#fef2f2', color: '#d72c0d' },
+    draft: { label: 'Черновик', bg: '#E0F5F5', color: '#2AABAB' },
+    awaiting_payment: { label: 'Ожидание оплаты', bg: '#E0F5F5', color: '#2AABAB' },
+    confirmed: { label: 'Подтверждён', bg: '#E0F5F5', color: '#2AABAB' },
+    in_production: { label: 'В производстве', bg: '#E0F5F5', color: '#2AABAB' },
+    ready: { label: 'Готов', bg: '#E0F5F5', color: '#2AABAB' },
+    shipped: { label: 'Отправлен', bg: '#E0F5F5', color: '#2AABAB' },
+    delivered: { label: 'Доставлен', bg: '#E0F5F5', color: '#2AABAB' },
+    cancelled: { label: 'Отменён', bg: '#E0F5F5', color: '#2AABAB' },
   };
 
   const tabs = [
@@ -136,15 +136,14 @@ function PoshivOrders() {
       {/* Header */}
       <div style={styles.header}>
         <div style={styles.titleRow}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#303030" strokeWidth="2">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2AABAB" strokeWidth="2">
             <circle cx="6" cy="6" r="3" />
             <circle cx="6" cy="18" r="3" />
             <line x1="20" y1="4" x2="8.12" y2="15.88" />
             <line x1="14.47" y1="14.48" x2="20" y2="20" />
             <line x1="8.12" y1="8.12" x2="12" y2="12" />
           </svg>
-          <h1 style={styles.title}>Заказы пошива</h1>
-          <span style={styles.count}>{orders.length}</span>
+          <h1 style={styles.title}>RENSHOPPING Пошив</h1>
         </div>
         <button
           style={{
@@ -170,15 +169,15 @@ function PoshivOrders() {
             onClick={() => setActiveTab(tab.id)}
             style={{
               ...styles.tab,
-              borderBottomColor: activeTab === tab.id ? '#303030' : 'transparent',
-              color: activeTab === tab.id ? '#303030' : '#6d7175',
+              borderBottomColor: activeTab === tab.id ? '#2AABAB' : 'transparent',
+              color: activeTab === tab.id ? '#2AABAB' : '#6d7175',
               fontWeight: activeTab === tab.id ? '600' : '500',
             }}
           >
             {tab.label}
             <span style={{
               ...styles.tabCount,
-              backgroundColor: activeTab === tab.id ? '#303030' : '#e4e5e7',
+              backgroundColor: activeTab === tab.id ? '#2AABAB' : '#e4e5e7',
               color: activeTab === tab.id ? '#fff' : '#6d7175',
             }}>
               {getTabCount(tab.id)}
@@ -297,7 +296,7 @@ function PoshivOrders() {
                     onClick={() => navigate(`/poshiv-orders/${order.id}`)}
                     style={{
                       ...styles.tr,
-                      backgroundColor: hoveredRow === order.id ? '#f6f6f7' : 'transparent',
+                      backgroundColor: hoveredRow === order.id ? '#f0fafa' : 'transparent',
                     }}
                     onMouseEnter={() => setHoveredRow(order.id)}
                     onMouseLeave={() => setHoveredRow(null)}
@@ -317,29 +316,17 @@ function PoshivOrders() {
                       <span style={styles.orderNumber}>{order.order_number}</span>
                     </td>
                     <td style={styles.td}>
-                      <div style={styles.clientCell}>
-                        <div style={styles.clientAvatar}>
-                          {(order.client_name || '?')[0].toUpperCase()}
-                        </div>
-                        <div style={styles.clientInfo}>
-                          <span style={styles.clientName}>{order.client_name || '—'}</span>
-                          <span style={styles.clientUsername}>{order.client_username}</span>
-                        </div>
-                      </div>
+                      <span style={styles.clientName}>{order.client_name || '—'}</span>
                     </td>
                     <td style={styles.td}>
                       <span style={styles.description}>
-                        {order.description?.length > 50
-                          ? order.description.substring(0, 50) + '...'
-                          : order.description || '—'}
+                        {order.description || '—'}
                       </span>
                     </td>
                     <td style={styles.td}>
-                      <div style={styles.details}>
-                        {order.item_type && <span style={styles.detailTag}>{order.item_type}</span>}
-                        {order.material && <span style={styles.detailTag}>{order.material}</span>}
-                        {order.size && <span style={styles.detailTag}>{order.size}</span>}
-                      </div>
+                      <span style={styles.detailText}>
+                        {order.item_type || '—'}
+                      </span>
                     </td>
                     <td style={styles.td}>
                       <span style={{
@@ -351,11 +338,7 @@ function PoshivOrders() {
                       </span>
                     </td>
                     <td style={styles.td}>
-                      <span style={{
-                        ...styles.paymentBadge,
-                        backgroundColor: order.is_paid ? '#e3f4e8' : '#fff8e6',
-                        color: order.is_paid ? '#1a7f37' : '#b88c1a',
-                      }}>
+                      <span style={styles.paymentBadge}>
                         {order.is_paid ? 'Оплачен' : 'Ожидает'}
                       </span>
                     </td>
@@ -413,7 +396,7 @@ const styles = {
   title: {
     fontSize: '20px',
     fontWeight: '600',
-    color: '#303030',
+    color: '#2AABAB',
     margin: 0,
   },
   count: {
@@ -563,9 +546,10 @@ const styles = {
   table: {
     width: '100%',
     borderCollapse: 'collapse',
+    tableLayout: 'fixed',
   },
   th: {
-    padding: '12px 14px',
+    padding: '10px 12px',
     textAlign: 'left',
     fontSize: '12px',
     fontWeight: '600',
@@ -582,35 +566,35 @@ const styles = {
     borderBottom: '1px solid #f1f1f1',
   },
   td: {
-    padding: '12px 14px',
+    padding: '10px 12px',
     fontSize: '13px',
     color: '#303030',
-    verticalAlign: 'middle',
+    borderBottom: '1px solid #e1e3e5',
   },
 
   // Order Image
   orderImage: {
-    width: '48px',
-    height: '60px',
+    width: '32px',
+    height: '32px',
     objectFit: 'cover',
-    borderRadius: '8px',
+    borderRadius: '4px',
     border: '1px solid #e1e3e5',
   },
   noImage: {
-    width: '48px',
-    height: '60px',
+    width: '32px',
+    height: '32px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#f6f6f7',
-    borderRadius: '8px',
+    borderRadius: '4px',
     border: '1px solid #e1e3e5',
   },
 
   // Order Number
   orderNumber: {
     fontWeight: '600',
-    color: '#2c6ecb',
+    color: '#2AABAB',
     fontSize: '13px',
   },
 
@@ -651,23 +635,22 @@ const styles = {
 
   // Description
   description: {
+    display: 'block',
     fontSize: '12px',
     color: '#6d7175',
-    lineHeight: '1.4',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    maxWidth: '150px',
   },
 
   // Details
-  details: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '4px',
-  },
-  detailTag: {
-    display: 'inline-block',
-    padding: '2px 8px',
-    backgroundColor: '#f6f6f7',
-    borderRadius: '4px',
-    fontSize: '11px',
+  detailText: {
+    display: 'block',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    fontSize: '12px',
     color: '#6d7175',
   },
 
@@ -686,6 +669,8 @@ const styles = {
     borderRadius: '6px',
     fontSize: '11px',
     fontWeight: '500',
+    backgroundColor: '#E0F5F5',
+    color: '#2AABAB',
   },
 
   // Price & Date

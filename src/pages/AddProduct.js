@@ -1779,7 +1779,7 @@ const styles = {
 
   uploadText: {
     fontSize: '13px',
-    color: '#2c6ecb',
+    color: '#2AABAB',
     fontWeight: '500',
   },
 

@@ -43,8 +43,8 @@ function Login({ setIsAuthenticated }) {
         <div style={styles.brandContent}>
           <div style={styles.logoWrapper}>
             <svg width="48" height="48">
-              <rect width="48" height="48" rx="12" fill="#303030"/>
-              <text x="24" y="32" fontFamily="Arial" fontSize="26" fontWeight="700" fill="#fff" textAnchor="middle">R</text>
+              <rect width="48" height="48" rx="12" fill="#fff"/>
+              <text x="24" y="32" fontFamily="Arial" fontSize="26" fontWeight="700" fill="#2AABAB" textAnchor="middle">R</text>
             </svg>
           </div>
           <h1 style={styles.brandTitle}>renexpress</h1>
@@ -173,7 +173,7 @@ const styles = {
   },
   leftPanel: {
     flex: 1,
-    background: 'linear-gradient(135deg, #1a1a1a 0%, #303030 100%)',
+    background: 'linear-gradient(135deg, #2AABAB 0%, #229999 100%)',
     padding: '60px',
     display: 'flex',
     flexDirection: 'column',
@@ -291,7 +291,7 @@ const styles = {
     justifyContent: 'center',
     gap: '8px',
     padding: '12px 20px',
-    backgroundColor: '#303030',
+    backgroundColor: '#2AABAB',
     color: 'white',
     border: 'none',
     borderRadius: '8px',

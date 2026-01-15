@@ -1,10 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Salestics Orange Theme */
-  --primary: #FF6B35;
-  --primary-light: #FFF4F0;
-  --primary-dark: #E85A2A;
+  /* RenExpress Teal Theme */
+  --primary: #2AABAB;
+  --primary-light: #E0F5F5;
+  --primary-dark: #229999;
 
   /* Neutral colors */
   --bg-main: #F5F5F7;
@@ -48,6 +48,15 @@ body {
 
 ::selection {
   background-color: var(--primary);
+}
+
+/* Header search input */
+.header-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.header-search-box {
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 0 rgba(255, 255, 255, 0.1);
   color: white;
 }
 

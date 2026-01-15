@@ -504,10 +504,10 @@ const styles = {
     padding: '10px 12px',
     backgroundColor: 'transparent',
     border: 'none',
-    borderBottom: '2px solid #303030',
+    borderBottom: '2px solid #2AABAB',
     fontSize: '13px',
     fontWeight: '600',
-    color: '#303030',
+    color: '#2AABAB',
     cursor: 'pointer',
   },
   tabsRight: {
