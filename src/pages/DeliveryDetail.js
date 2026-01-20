@@ -72,6 +72,7 @@ function DeliveryDetail() {
   useEffect(() => {
     fetchDelivery();
     fetchDeliveryTypes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchDelivery = async () => {
@@ -881,7 +882,7 @@ function DeliveryDetail() {
                                 <img
                                   key={photo.id || photoIdx}
                                   src={photo.photo_url}
-                                  alt="Status photo"
+                                  alt={`Status ${photoIdx + 1}`}
                                   style={styles.historyPhoto}
                                   loading="lazy"
                                   decoding="async"

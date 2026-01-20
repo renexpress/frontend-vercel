@@ -48,6 +48,7 @@ function OrderDetail() {
   const [history, setHistory] = useState([]);
   const [fullScreenImage, setFullScreenImage] = useState(null);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadOrder(); }, [id]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (order) loadOrderHistory(); }, [order]);

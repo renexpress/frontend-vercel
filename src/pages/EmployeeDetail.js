@@ -34,6 +34,7 @@ function EmployeeDetail() {
 
   useEffect(() => {
     fetchEmployee();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchEmployee = async () => {
