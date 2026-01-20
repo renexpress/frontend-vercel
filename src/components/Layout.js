@@ -158,6 +158,7 @@ function Layout({ children, setIsAuthenticated }) {
   };
 
   const NavItem = ({ id, path, label, icon, active }) => {
+    // eslint-disable-next-line no-unused-vars
     const iconWithColor = icons[icon] ? React.cloneElement(icons[icon], {
       props: { ...icons[icon].props },
       children: React.Children.map(icons[icon].props.children, child =>

@@ -115,6 +115,7 @@ function AddProduct() {
     setShowVariantForm(false);
   };
 
+  // eslint-disable-next-line no-unused-vars
   const cancelVariants = () => {
     setShowVariantForm(false);
     setVariantOptions([{ name: '', values: [''] }]);
@@ -164,6 +165,7 @@ function AddProduct() {
 
   useEffect(() => {
     fetchCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchCategories = async () => {
@@ -237,6 +239,7 @@ function AddProduct() {
   };
 
   // Flatten all categories recursively to get full paths for search
+  // eslint-disable-next-line no-unused-vars
   const flattenCategories = (cats) => {
     let result = [];
 

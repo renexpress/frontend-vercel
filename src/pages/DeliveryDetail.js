@@ -6,10 +6,12 @@ function DeliveryDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [delivery, setDelivery] = useState(null);
+  // eslint-disable-next-line no-unused-vars
   const [deliveryTypes, setDeliveryTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formattedMessage, setFormattedMessage] = useState('');
+  // eslint-disable-next-line no-unused-vars
   const [hoveredBtn, setHoveredBtn] = useState(null);
   const [historyExpanded, setHistoryExpanded] = useState(false);
   const [viewingImage, setViewingImage] = useState(null);

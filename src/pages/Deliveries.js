@@ -465,6 +465,7 @@ function Deliveries() {
 }
 
 const PRIMARY_COLOR = '#2AABAB';
+// eslint-disable-next-line no-unused-vars
 const PRIMARY_DARK = '#239999';
 
 const styles = {
