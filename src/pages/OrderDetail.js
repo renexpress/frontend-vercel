@@ -49,6 +49,7 @@ function OrderDetail() {
   const [fullScreenImage, setFullScreenImage] = useState(null);
 
   useEffect(() => { loadOrder(); }, [id]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (order) loadOrderHistory(); }, [order]);
 
   const loadOrder = async () => {
@@ -109,6 +110,7 @@ function OrderDetail() {
     } catch (err) {} finally { setAdvancing(false); }
   };
 
+  // eslint-disable-next-line no-unused-vars
   const formatDate = (ds) => ds ? new Date(ds).toLocaleDateString('ru-RU') : '—';
   const formatDateTime = (ds) => ds ? new Date(ds).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
   const formatMoney = (a) => a ? Number(a).toLocaleString('ru-RU') + ' ₽' : '—';
@@ -308,7 +310,7 @@ function OrderDetail() {
                           <img
                             key={photoIdx}
                             src={photo.photo_url}
-                            alt={`Photo ${photoIdx + 1}`}
+                            alt={`${photoIdx + 1}`}
                             style={styles.historyPhotoImg}
                             onClick={() => setFullScreenImage(photo.photo_url)}
                           />

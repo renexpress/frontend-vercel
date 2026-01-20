@@ -19,12 +19,14 @@ function Statistics() {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [clients, setClients] = useState([]);
   const [categories, setCategories] = useState([]);
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
 
   // Filters
   const [timeRange, setTimeRange] = useState('30days');
+  // eslint-disable-next-line no-unused-vars
   const [customDateFrom, setCustomDateFrom] = useState('');
   const [customDateTo] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');

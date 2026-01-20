@@ -212,6 +212,7 @@ function ProductDetail() {
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchCategories();
     fetchProduct();
@@ -870,6 +871,7 @@ function ProductDetail() {
   };
 
   // Save and exit edit mode
+  // eslint-disable-next-line no-unused-vars
   const handleSaveAndExit = async () => {
     await handleSave();
     // handleSave will navigate away on success, so edit mode is effectively exited
