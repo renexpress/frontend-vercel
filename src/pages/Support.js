@@ -24,7 +24,8 @@ function Support() {
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [closeReason, setCloseReason] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
-  const [uploadingFile, setUploadingFile] = useState(false);
+  // eslint-disable-next-line no-unused-vars
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [viewingImage, setViewingImage] = useState(null);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -72,6 +73,7 @@ function Support() {
     });
   }, [chats, searchQuery, statusFilter]);
 
+  // eslint-disable-next-line no-unused-vars
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
   const loadChats = async () => {
@@ -152,7 +154,7 @@ function Support() {
 
   const uploadFile = async () => {
     if (!selectedFile || !selectedChat) return;
-    setUploadingFile(true);
+    setIsUploadingFile(true);
     try {
       // Upload image to Azure using general upload endpoint
       const formData = new FormData();
@@ -185,7 +187,7 @@ function Support() {
       console.error('Error uploading file:', error);
       alert('Ошибка загрузки файла: ' + (error.response?.data?.error || error.message));
     } finally {
-      setUploadingFile(false);
+      setIsUploadingFile(false);
     }
   };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import API_URL from '../config/api';
 
 // Status configuration
@@ -26,14 +26,9 @@ function Statistics() {
   // Filters
   const [timeRange, setTimeRange] = useState('30days');
   const [customDateFrom, setCustomDateFrom] = useState('');
-  const [customDateTo, setCustomDateTo] = useState('');
+  const [customDateTo] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [chartGrouping, setChartGrouping] = useState('daily');
-  const [comparePrevious, setComparePrevious] = useState(false);
-
-  useEffect(() => {
-    fetchAllData();
-  }, []);
 
   // Helper function to extract array from API response
   const extractArray = (data, key) => {
@@ -43,7 +38,7 @@ function Statistics() {
     return [];
   };
 
-  const fetchAllData = async () => {
+  const fetchAllData = useCallback(async () => {
     try {
       const [ordersRes, productsRes, clientsRes, categoriesRes] = await Promise.all([
         fetch(`${API_URL}/orders/`).then(r => r.json()).catch(() => []),
@@ -62,10 +57,14 @@ function Statistics() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
 
   // Calculate date range
-  const getDateRange = () => {
+  const getDateRange = useCallback(() => {
     const now = new Date();
     let startDate, endDate = new Date(now);
 
@@ -95,10 +94,10 @@ function Statistics() {
     }
 
     return { startDate, endDate };
-  };
+  }, [timeRange, customDateFrom, customDateTo]);
 
   // Get previous period date range
-  const getPreviousPeriodRange = () => {
+  const getPreviousPeriodRange = useCallback(() => {
     const { startDate, endDate } = getDateRange();
     const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) || 1;
 
@@ -108,7 +107,7 @@ function Statistics() {
     prevStartDate.setDate(prevStartDate.getDate() - daysDiff);
 
     return { prevStartDate, prevEndDate };
-  };
+  }, [getDateRange]);
 
   // Filter orders based on date range and category
   const filteredOrders = useMemo(() => {
@@ -120,7 +119,7 @@ function Statistics() {
       const matchesCategory = categoryFilter === 'all' || order.category_id === parseInt(categoryFilter);
       return inDateRange && matchesCategory;
     });
-  }, [orders, timeRange, customDateFrom, customDateTo, categoryFilter]);
+  }, [orders, categoryFilter, getDateRange]);
 
   // Previous period orders
   const previousPeriodOrders = useMemo(() => {
@@ -130,7 +129,7 @@ function Statistics() {
       const orderDate = new Date(order.created_at);
       return orderDate >= prevStartDate && orderDate <= prevEndDate;
     });
-  }, [orders, timeRange, customDateFrom, customDateTo]);
+  }, [orders, getPreviousPeriodRange]);
 
   // =============================================
   // 1. KPI METRICS
@@ -178,7 +177,6 @@ function Statistics() {
   const revenueOverTime = useMemo(() => {
     const { startDate, endDate } = getDateRange();
     const data = [];
-    const prevData = [];
 
     if (chartGrouping === 'daily') {
       const current = new Date(startDate);
@@ -246,7 +244,7 @@ function Statistics() {
     }
 
     return data.slice(-14);
-  }, [filteredOrders, chartGrouping, timeRange, customDateFrom, customDateTo]);
+  }, [filteredOrders, chartGrouping, getDateRange]);
 
   // =============================================
   // 3. ORDERS OVER TIME
@@ -326,7 +324,8 @@ function Statistics() {
       .slice(0, 10);
   }, [filteredOrders]);
 
-  const topProductsByOrders = useMemo(() => {
+  // eslint-disable-next-line no-unused-vars
+  const _topProductsByOrders = useMemo(() => {
     return [...topProductsByRevenue].sort((a, b) => b.orders - a.orders).slice(0, 10);
   }, [topProductsByRevenue]);
 
@@ -387,7 +386,6 @@ function Statistics() {
   // =============================================
   const funnelData = useMemo(() => {
     const total = filteredOrders.length;
-    const awaitingPayment = filteredOrders.filter(o => o.status === 'awaiting_payment').length;
     const accepted = filteredOrders.filter(o => ['accepted', 'istanbul_warehouse', 'to_moscow', 'moscow_warehouse', 'to_address', 'delivered'].includes(o.status)).length;
     const inTransit = filteredOrders.filter(o => ['to_moscow', 'moscow_warehouse', 'to_address', 'delivered'].includes(o.status)).length;
     const delivered = filteredOrders.filter(o => o.status === 'delivered').length;
