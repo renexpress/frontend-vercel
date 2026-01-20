@@ -131,26 +131,30 @@ function Layout({ children, setIsAuthenticated }) {
     { id: 'analytics', path: '/statistics', label: 'Аналитика', icon: 'analytics' },
   ];
 
-  const subIcons = {
-    draft: (
-      <svg width="16" height="16" viewBox="0 0 20 20" fill={PRIMARY}>
-        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
-      </svg>
-    ),
-    users: (
-      <svg width="16" height="16" viewBox="0 0 20 20" fill={PRIMARY}>
-        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
-      </svg>
-    ),
-    scissors: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={PRIMARY} strokeWidth="2">
-        <circle cx="6" cy="6" r="3" />
-        <circle cx="6" cy="18" r="3" />
-        <line x1="20" y1="4" x2="8.12" y2="15.88" />
-        <line x1="14.47" y1="14.48" x2="20" y2="20" />
-        <line x1="8.12" y1="8.12" x2="12" y2="12" />
-      </svg>
-    ),
+  const getSubIcon = (icon, active) => {
+    const color = active ? '#fff' : '#000';
+    const icons = {
+      draft: (
+        <svg width="16" height="16" viewBox="0 0 20 20" fill={color}>
+          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+        </svg>
+      ),
+      users: (
+        <svg width="16" height="16" viewBox="0 0 20 20" fill={color}>
+          <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
+        </svg>
+      ),
+      scissors: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+          <circle cx="6" cy="6" r="3" />
+          <circle cx="6" cy="18" r="3" />
+          <line x1="20" y1="4" x2="8.12" y2="15.88" />
+          <line x1="14.47" y1="14.48" x2="20" y2="20" />
+          <line x1="8.12" y1="8.12" x2="12" y2="12" />
+        </svg>
+      ),
+    };
+    return icons[icon] || null;
   };
 
   const NavItem = ({ id, path, label, icon, active }) => {
@@ -174,14 +178,23 @@ function Layout({ children, setIsAuthenticated }) {
           margin: '1px 0',
           borderRadius: 8,
           cursor: 'pointer',
-          background: active ? PRIMARY : hovered === id ? '#E0F5F5' : 'transparent',
+          background: active ? 'linear-gradient(to right, #2AABAB, #0a2535)' : hovered === id ? '#E0F5F5' : 'transparent',
           boxShadow: active ? '0 1px 3px rgba(42,171,171,0.3)' : 'none',
         }}
       >
-        <svg width="18" height="18" viewBox={icons[icon]?.props?.viewBox || "0 0 24 24"} fill={active ? '#fff' : PRIMARY}>
+        <svg width="18" height="18" viewBox={icons[icon]?.props?.viewBox || "0 0 24 24"} fill={active ? '#fff' : '#000'}>
           {icons[icon]?.props?.children}
         </svg>
-        <span style={{ fontSize: 14, color: active ? '#fff' : PRIMARY, fontWeight: 500 }}>{label}</span>
+        <span style={{
+          fontSize: 14,
+          fontWeight: 500,
+          ...(active ? { color: '#fff' } : {
+            background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          })
+        }}>{label}</span>
       </div>
     );
   };
@@ -197,17 +210,23 @@ function Layout({ children, setIsAuthenticated }) {
         gap: 8,
         padding: '5px 10px 5px 38px',
         fontSize: 13,
-        color: active ? '#fff' : PRIMARY,
         cursor: 'pointer',
         fontWeight: active ? 500 : 400,
         borderRadius: 6,
-        backgroundColor: active ? PRIMARY : hovered === `sub-${path}` ? '#E0F5F5' : 'transparent',
+        background: active ? 'linear-gradient(to right, #2AABAB, #0a2535)' : hovered === `sub-${path}` ? '#E0F5F5' : 'transparent',
         boxShadow: active ? '0 1px 3px rgba(42,171,171,0.3)' : 'none',
         margin: '1px 0',
       }}
     >
-      {icon && subIcons[icon]}
-      <span>{label}</span>
+      {icon && getSubIcon(icon, active)}
+      <span style={{
+        ...(active ? { color: '#fff' } : {
+          background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+        })
+      }}>{label}</span>
     </div>
   );
 
@@ -233,15 +252,29 @@ function Layout({ children, setIsAuthenticated }) {
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: PRIMARY, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(to right, #2AABAB, #2AABAB, #0a2535)', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       {/* Header */}
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 56, background: PRIMARY, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', zIndex: 100 }}>
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 56, background: 'linear-gradient(to right, #2AABAB, #2AABAB, #0a2535)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', zIndex: 100 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <svg width="32" height="32">
-            <rect width="32" height="32" rx="8" fill="#fff"/>
-            <text x="16" y="16" fontFamily="Arial" fontSize="18" fontWeight="700" fill="#2AABAB" textAnchor="middle" dominantBaseline="central">R</text>
+            <defs>
+              <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#2AABAB"/>
+                <stop offset="100%" stopColor="#0a2535"/>
+              </linearGradient>
+            </defs>
+            <rect width="32" height="32" rx="8" fill="url(#logoGradient)"/>
+            <text x="16" y="16" fontFamily="Arial" fontSize="18" fontWeight="700" fill="#fff" textAnchor="middle" dominantBaseline="central">R</text>
           </svg>
-          <span style={{ color: '#fff', fontSize: 17, fontWeight: 600, letterSpacing: '-0.3px' }}>RENEXPRESS</span>
+          <span style={{
+            fontSize: 17,
+            fontWeight: 600,
+            letterSpacing: '-0.3px',
+            background: 'linear-gradient(to right, #1a7a7a, #061215)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}>RENEXPRESS</span>
         </div>
         <div className="header-search-box" style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '8px 12px', width: 480, cursor: 'text' }}>
           <svg width="16" height="16" viewBox="0 0 20 20">
@@ -271,8 +304,8 @@ function Layout({ children, setIsAuthenticated }) {
               width: 32,
               height: 32,
               borderRadius: 8,
-              background: '#fff',
-              color: PRIMARY,
+              background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+              color: '#fff',
               fontSize: 12,
               fontWeight: 600,
               display: 'flex',
@@ -317,8 +350,15 @@ function Layout({ children, setIsAuthenticated }) {
                   padding: '12px 14px',
                   borderBottom: '1px solid #e1e3e5',
                 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#303030' }}>{user.full_name || 'Администратор'}</div>
-                  <div style={{ fontSize: 12, color: '#6d7175', marginTop: 2 }}>{isMainAdmin ? 'Главный администратор' : 'Администратор'}</div>
+                  <div style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                  }}>{user.full_name || 'Администратор'}</div>
+                  <div style={{ fontSize: 12, color: '#000', marginTop: 2 }}>{isMainAdmin ? 'Главный администратор' : 'Администратор'}</div>
                 </div>
                 <div
                   onClick={handleLogout}

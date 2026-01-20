@@ -194,22 +194,11 @@ function Deliveries() {
       {/* Header */}
       <div style={styles.header}>
         <div style={styles.titleRow}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="#2AABAB">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#000">
             <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
           </svg>
           <h1 style={styles.title}>Доставки RENCARGO</h1>
         </div>
-        <button
-          style={{
-            ...styles.btnPrimary,
-            backgroundColor: hoveredBtn === 'add' ? '#239999' : '#2AABAB',
-          }}
-          onMouseEnter={() => setHoveredBtn('add')}
-          onMouseLeave={() => setHoveredBtn(null)}
-          onClick={() => setShowAddModal(true)}
-        >
-          + Добавить доставку
-        </button>
       </div>
 
       {/* Card container */}
@@ -318,12 +307,7 @@ function Deliveries() {
                     key={opt.id}
                     type="button"
                     onClick={() => toggleFilter(opt.id)}
-                    style={{
-                      ...styles.filterChip,
-                      backgroundColor: searchFilters[opt.id] ? '#2AABAB' : '#fff',
-                      color: searchFilters[opt.id] ? '#fff' : '#2AABAB',
-                      borderColor: '#2AABAB',
-                    }}
+                    style={searchFilters[opt.id] ? styles.filterChipActive : styles.filterChipInactive}
                   >
                     {opt.label}
                   </button>
@@ -367,12 +351,11 @@ function Deliveries() {
                   onClick={() => navigate(`/deliveries/${delivery.id}`)}
                 >
                   <td style={styles.td}>
-                    <span style={styles.deliveryNumber}>REN{delivery.receiver}-{delivery.sequential_number || 1}</span>
-                    <div style={styles.deliveryNumberSmall}>{delivery.delivery_number}</div>
+                    <span style={styles.deliveryNumber}>{delivery.delivery_number}</span>
                   </td>
                   <td style={styles.td}>
                     <div>
-                      <div style={styles.receiverUsername}>{delivery.receiver_username}</div>
+                      <span style={styles.receiverUsername}>{delivery.receiver_username}</span>
                       <div style={styles.receiverName}>{delivery.receiver_name || '—'}</div>
                     </div>
                   </td>
@@ -389,11 +372,7 @@ function Deliveries() {
                     {delivery.total_price ? `${delivery.total_price}$` : '—'}
                   </td>
                   <td style={styles.td}>
-                    <span style={{
-                      ...styles.statusBadge,
-                      backgroundColor: statusInfo.bg,
-                      color: statusInfo.color,
-                    }}>
+                    <span style={styles.statusBadge}>
                       {statusInfo.label}
                     </span>
                   </td>
@@ -491,8 +470,6 @@ const PRIMARY_DARK = '#239999';
 const styles = {
   page: {
     padding: '16px 20px',
-    backgroundColor: '#fff',
-    minHeight: '100vh',
   },
   loading: {
     display: 'flex',
@@ -523,8 +500,11 @@ const styles = {
   title: {
     fontSize: '18px',
     fontWeight: '600',
-    color: PRIMARY_COLOR,
     margin: 0,
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
   },
   btnPrimary: {
     display: 'inline-flex',
@@ -567,7 +547,7 @@ const styles = {
     borderBottom: '2px solid transparent',
     fontSize: '13px',
     fontWeight: '500',
-    color: '#6d7175',
+    color: '#000',
     cursor: 'pointer',
     whiteSpace: 'nowrap',
   },
@@ -575,10 +555,14 @@ const styles = {
     padding: '10px 12px',
     backgroundColor: 'transparent',
     border: 'none',
-    borderBottom: '2px solid ' + PRIMARY_COLOR,
+    borderBottom: '2px solid',
+    borderImage: 'linear-gradient(to right, #2AABAB, #0a2535) 1',
     fontSize: '13px',
     fontWeight: '600',
-    color: PRIMARY_COLOR,
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
     cursor: 'pointer',
     whiteSpace: 'nowrap',
   },
@@ -607,7 +591,7 @@ const styles = {
     textAlign: 'left',
     fontSize: '12px',
     fontWeight: '500',
-    color: '#6d7175',
+    color: '#000',
     backgroundColor: '#f6f6f7',
     borderBottom: '1px solid #e1e3e5',
   },
@@ -624,7 +608,10 @@ const styles = {
 
   deliveryNumber: {
     fontWeight: '600',
-    color: '#2AABAB',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
   },
   deliveryNumberSmall: {
     fontSize: '11px',
@@ -633,7 +620,10 @@ const styles = {
   },
   receiverUsername: {
     fontWeight: '600',
-    color: PRIMARY_COLOR,
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
   },
   receiverName: {
     fontSize: '12px',
@@ -648,6 +638,8 @@ const styles = {
     borderRadius: '10px',
     fontSize: '12px',
     fontWeight: '500',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    color: '#fff',
   },
 
   empty: {
@@ -725,14 +717,30 @@ const styles = {
     gap: '6px',
     flexWrap: 'wrap',
   },
-  filterChip: {
+  filterChipActive: {
     padding: '4px 10px',
     fontSize: '12px',
     fontWeight: '500',
-    border: '1px solid ' + PRIMARY_COLOR,
+    border: 'none',
     borderRadius: '16px',
     cursor: 'pointer',
     transition: 'all 0.15s',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    color: '#fff',
+  },
+  filterChipInactive: {
+    padding: '4px 10px',
+    fontSize: '12px',
+    fontWeight: '500',
+    border: '1px solid #2AABAB',
+    borderRadius: '16px',
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+    backgroundColor: '#fff',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
   },
   searchResults: {
     marginTop: '10px',

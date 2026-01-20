@@ -25,6 +25,7 @@ function Support() {
   const [closeReason, setCloseReason] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [viewingImage, setViewingImage] = useState(null);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const [stats, setStats] = useState({ total: 0, open: 0, pending: 0, unread: 0 });
@@ -35,10 +36,7 @@ function Support() {
     return () => clearInterval(pollInterval);
   }, []);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
+  
   useEffect(() => {
     if (!selectedChat) return;
     const msgPollInterval = setInterval(() => {
@@ -98,7 +96,12 @@ function Support() {
 
   const selectChat = async (chat) => {
     setSelectedChat(chat);
-    loadMessages(chat.client_id);
+    const response = await axios.get(`${API_URL}/support/${chat.client_id}/messages/`);
+    if (response.data.success) {
+      setMessages(response.data.messages);
+      // Instantly be at bottom when opening a new chat
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'instant' }), 50);
+    }
     try {
       await axios.post(`${API_URL}/support/${chat.client_id}/read/`);
       loadChats();
@@ -151,15 +154,36 @@ function Support() {
     if (!selectedFile || !selectedChat) return;
     setUploadingFile(true);
     try {
+      // Upload image to Azure using general upload endpoint
       const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('client_id', selectedChat.client_id);
-      await axios.post(`${API_URL}/support/${selectedChat.client_id}/upload/`, formData, {
+      formData.append('image', selectedFile);
+
+      console.log('Uploading file:', selectedFile.name);
+      const uploadResponse = await axios.post(`${API_URL}/upload/`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      loadMessages(selectedChat.client_id);
+      console.log('Upload response:', uploadResponse.data);
+
+      if (uploadResponse.data.success && uploadResponse.data.url) {
+        // Get current admin name from localStorage
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const adminName = user.full_name || user.username || 'Администратор';
+
+        // Send message with image URL
+        await axios.post(`${API_URL}/support/${selectedChat.client_id}/send/`, {
+          message: '',
+          image_url: uploadResponse.data.url,
+          is_from_client: false,
+          admin_name: adminName
+        });
+        loadMessages(selectedChat.client_id);
+      } else {
+        console.error('Upload failed:', uploadResponse.data);
+        alert('Ошибка загрузки: ' + (uploadResponse.data.error || 'Неизвестная ошибка'));
+      }
     } catch (error) {
       console.error('Error uploading file:', error);
+      alert('Ошибка загрузки файла: ' + (error.response?.data?.error || error.message));
     } finally {
       setUploadingFile(false);
     }
@@ -422,17 +446,19 @@ function Support() {
                       {isClient && (
                         <div style={styles.msgAvatar}>{selectedChat.client_name?.charAt(0).toUpperCase() || 'К'}</div>
                       )}
-                      <div style={styles.msgWrapper}>
+                      <div style={{ ...styles.msgWrapper, alignItems: isClient ? 'flex-start' : 'flex-end' }}>
                         {!isClient && msg.admin_name && (
                           <div style={styles.adminNameLabel}>{msg.admin_name}</div>
                         )}
-                        <div style={{ ...styles.msgBubble, ...(isClient ? styles.msgBubbleClient : styles.msgBubbleAdmin) }}>
-                          {msg.image_url && (
-                            <img src={msg.image_url} alt="" style={styles.msgImage} onClick={() => window.open(msg.image_url, '_blank')} />
-                          )}
-                          {msg.message && <p style={{ ...styles.msgText, color: isClient ? '#303030' : '#fff' }}>{msg.message}</p>}
-                          <span style={{ ...styles.msgTime, color: isClient ? '#8c9196' : 'rgba(255,255,255,0.7)' }}>{formatTime(msg.created_at)}</span>
-                        </div>
+                        {msg.image_url && (
+                          <img src={msg.image_url} alt="" style={styles.msgImage} onClick={() => setViewingImage(msg.image_url)} />
+                        )}
+                        {msg.message && (
+                          <div style={{ ...styles.msgBubble, ...(isClient ? styles.msgBubbleClient : styles.msgBubbleAdmin) }}>
+                            <p style={{ ...styles.msgText, color: isClient ? '#303030' : '#fff' }}>{msg.message}</p>
+                          </div>
+                        )}
+                        <span style={styles.msgTimeOutside}>{formatTime(msg.created_at)}</span>
                       </div>
                     </div>
                   );
@@ -583,6 +609,14 @@ function Support() {
               <button style={styles.modalConfirm} onClick={closeChat}>Закрыть</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Image Lightbox */}
+      {viewingImage && (
+        <div style={styles.lightboxOverlay} onClick={() => setViewingImage(null)}>
+          <button style={styles.lightboxClose} onClick={() => setViewingImage(null)}>×</button>
+          <img src={viewingImage} alt="" style={styles.lightboxImage} onClick={e => e.stopPropagation()} />
         </div>
       )}
     </div>
@@ -926,7 +960,7 @@ const styles = {
   },
   msgBubbleClient: {
     backgroundColor: '#fff',
-    border: '1px solid #e1e3e5',
+    border: '1px solid #e8e8e8',
     borderBottomLeftRadius: '4px',
   },
   msgBubbleAdmin: {
@@ -935,10 +969,13 @@ const styles = {
   },
   msgImage: {
     maxWidth: '100%',
-    maxHeight: '200px',
-    borderRadius: '8px',
+    maxHeight: '240px',
+    borderRadius: '6px',
     cursor: 'pointer',
-    marginBottom: '6px',
+    marginBottom: '4px',
+    border: 'none',
+    display: 'block',
+    objectFit: 'cover',
   },
   msgText: {
     margin: 0,
@@ -952,6 +989,11 @@ const styles = {
     marginTop: '4px',
     display: 'block',
     textAlign: 'right',
+  },
+  msgTimeOutside: {
+    fontSize: '11px',
+    color: '#8c9196',
+    marginTop: '4px',
   },
   inputArea: {
     padding: '12px 16px',
@@ -1244,6 +1286,43 @@ const styles = {
     fontWeight: '500',
     fontSize: '13px',
     cursor: 'pointer',
+  },
+  lightboxOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1100,
+    cursor: 'pointer',
+  },
+  lightboxClose: {
+    position: 'absolute',
+    top: '20px',
+    right: '20px',
+    width: '40px',
+    height: '40px',
+    border: 'none',
+    background: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: '50%',
+    cursor: 'pointer',
+    fontSize: '24px',
+    color: '#fff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lightboxImage: {
+    maxWidth: '85%',
+    maxHeight: '85%',
+    objectFit: 'contain',
+    borderRadius: '8px',
+    cursor: 'default',
+    boxShadow: '0 4px 24px rgba(0, 0, 0, 0.3)',
   },
 };
 

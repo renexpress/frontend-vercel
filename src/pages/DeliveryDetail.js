@@ -12,15 +12,16 @@ function DeliveryDetail() {
   const [formattedMessage, setFormattedMessage] = useState('');
   const [hoveredBtn, setHoveredBtn] = useState(null);
   const [historyExpanded, setHistoryExpanded] = useState(false);
+  const [viewingImage, setViewingImage] = useState(null);
 
   // Memoize status history to prevent lag
   const memoizedStatusHistory = useMemo(() => {
     if (!delivery?.status_history) return [];
-    return [...delivery.status_history].reverse();
+    return [...delivery.status_history];
   }, [delivery?.status_history]);
 
-  // Multiple places with weight
-  const [places, setPlaces] = useState([{ number: '', weight: '' }]);
+  // Multiple places with weight, volume, and barcode
+  const [places, setPlaces] = useState([{ number: '', weight: '', volume: '', barcode: '' }]);
 
   // Get today's date in YYYY-MM-DD format
   const getTodayDate = () => {
@@ -52,7 +53,7 @@ function DeliveryDetail() {
   }, [places]);
 
   const addPlace = () => {
-    setPlaces([...places, { number: '', weight: '' }]);
+    setPlaces([...places, { number: '', weight: '', volume: '', barcode: '' }]);
   };
 
   const removePlace = (index) => {
@@ -80,29 +81,33 @@ function DeliveryDetail() {
         const data = await res.json();
         setDelivery(data);
 
-        // Parse place numbers (comma-separated) into array with weights
-        // Format: "A1:5.5, A2:3.2" or legacy "A1, A2"
+        // Parse place numbers (comma-separated) into array with weights, volumes, and barcodes
+        // Format: "A1:5.5:0.02:BC001, A2:3.2:0.03:BC002" or legacy "A1:5.5, A2:3.2" or "A1, A2"
         const placeStr = data.place_number || '';
-        const weightStr = data.weight_kg || '';
 
         let parsedPlaces = [];
         if (placeStr) {
           const placeArr = placeStr.split(',').map(p => p.trim()).filter(p => p);
-          // Check if places have embedded weights (format: "A1:5.5")
-          const hasEmbeddedWeights = placeArr.some(p => p.includes(':'));
+          // Check if places have embedded data (format with colons)
+          const hasEmbeddedData = placeArr.some(p => p.includes(':'));
 
-          if (hasEmbeddedWeights) {
+          if (hasEmbeddedData) {
             parsedPlaces = placeArr.map(p => {
-              const [num, w] = p.split(':');
-              return { number: num.trim(), weight: w ? w.trim() : '' };
+              const parts = p.split(':');
+              return {
+                number: parts[0]?.trim() || '',
+                weight: parts[1]?.trim() || '',
+                volume: parts[2]?.trim() || '',
+                barcode: parts[3]?.trim() || ''
+              };
             });
           } else {
-            // Legacy format - distribute weight equally or leave empty
-            parsedPlaces = placeArr.map(p => ({ number: p, weight: '' }));
+            // Legacy format - just place numbers
+            parsedPlaces = placeArr.map(p => ({ number: p, weight: '', volume: '', barcode: '' }));
           }
         }
 
-        setPlaces(parsedPlaces.length > 0 ? parsedPlaces : [{ number: '', weight: '' }]);
+        setPlaces(parsedPlaces.length > 0 ? parsedPlaces : [{ number: '', weight: '', volume: '', barcode: '' }]);
 
         setEditForm({
           place_number: data.place_number || '',
@@ -151,13 +156,21 @@ function DeliveryDetail() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Build place_number with embedded weights (format: "A1:5.5, A2:3.2")
+      // Build place_number with embedded data (format: "A1:5.5:0.02:BC001, A2:3.2:0.03:BC002")
       const validPlaces = places.filter(p => p.number.trim() !== '');
       const placeNumberStr = validPlaces.map(p => {
-        if (p.weight) {
-          return `${p.number}:${p.weight}`;
+        const parts = [p.number];
+        // Add weight (or empty)
+        parts.push(p.weight || '');
+        // Add volume (or empty)
+        parts.push(p.volume || '');
+        // Add barcode (or empty)
+        parts.push(p.barcode || '');
+        // Remove trailing empty parts
+        while (parts.length > 1 && parts[parts.length - 1] === '') {
+          parts.pop();
         }
-        return p.number;
+        return parts.join(':');
       }).join(', ');
 
       // Calculate total weight
@@ -166,10 +179,24 @@ function DeliveryDetail() {
         return sum + w;
       }, 0);
 
+      // Calculate total volume
+      const totalVolume = places.reduce((sum, p) => {
+        const v = parseFloat(p.volume) || 0;
+        return sum + v;
+      }, 0);
+
+      // Collect all barcodes
+      const allBarcodes = validPlaces
+        .map(p => p.barcode)
+        .filter(b => b && b.trim())
+        .join(', ');
+
       const payload = {
         ...editForm,
         place_number: placeNumberStr,
         weight_kg: totalWeight > 0 ? totalWeight.toString() : editForm.weight_kg,
+        volume: totalVolume > 0 ? totalVolume.toFixed(3) : null,
+        barcode: allBarcodes || null,
         status: 'v_stambule'  // Auto-set status to "В Стамбуле"
       };
 
@@ -248,9 +275,8 @@ function DeliveryDetail() {
   // Check if delivery is completed (vidan = delivered)
   const isDeliveryCompleted = delivery.status === 'vidan';
 
-  // Check if receiver has filled required data
+  // Check if receiver has filled required data (address is optional - filled later when receiver chooses delivery option)
   const receiverDataFilled = delivery.receiver_full_name &&
-                              delivery.receiver_address &&
                               delivery.receiver_phone &&
                               delivery.delivery_type;
 
@@ -260,56 +286,53 @@ function DeliveryDetail() {
       <div style={styles.header}>
         <div style={styles.headerLeft}>
           <button style={styles.backBtn} onClick={() => navigate('/deliveries')}>
-            <svg width="16" height="16" viewBox="0 0 20 20" fill="#5c5f62">
-              <path d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"/>
+            <svg width="16" height="16" viewBox="0 0 20 20" style={{ display: 'block', flexShrink: 0, marginTop: '2px' }}>
+              <defs>
+                <linearGradient id="backIconGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#2AABAB"/>
+                  <stop offset="100%" stopColor="#0a2535"/>
+                </linearGradient>
+              </defs>
+              <path d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" fill="url(#backIconGradient)"/>
             </svg>
-            Назад
+            <span style={styles.backBtnText}>Назад</span>
           </button>
           <span style={styles.deliveryTypeIcon}>
             {delivery.delivery_type_name ? (
               delivery.delivery_type_name.toLowerCase().includes('avia') ? (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="#2AABAB">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="#000">
                   <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
                 </svg>
               ) : (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="#2AABAB">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="#000">
                   <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
                 </svg>
               )
             ) : (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="#2AABAB">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="#000">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
               </svg>
             )}
           </span>
-          <h1 style={styles.title}>Заказ REN{delivery.receiver}-{delivery.sequential_number || 1}</h1>
-          <span style={{
-            ...styles.statusBadge,
-            backgroundColor: statusInfo.bg,
-            color: statusInfo.color,
-          }}>
+          <h1 style={styles.title}>Заказ {delivery.delivery_number}</h1>
+          <span style={styles.statusBadge}>
             {statusInfo.label}
           </span>
         </div>
         {!isDeliveryCompleted && (
           <div style={styles.headerRight}>
             <button
-              style={{
-                ...styles.btnSecondary,
-                backgroundColor: hoveredBtn === 'delete' ? '#fef2f2' : '#fff',
-                borderColor: hoveredBtn === 'delete' ? '#dc2626' : '#c9cccf',
-                color: hoveredBtn === 'delete' ? '#dc2626' : '#303030',
-              }}
+              style={styles.btnDelete}
               onMouseEnter={() => setHoveredBtn('delete')}
               onMouseLeave={() => setHoveredBtn(null)}
               onClick={handleDelete}
             >
-              Удалить
+              <span style={styles.btnDeleteText}>Удалить</span>
             </button>
             <button
               style={{
-                ...styles.btnPrimary,
-                backgroundColor: !receiverDataFilled ? '#ccc' : hoveredBtn === 'save' ? '#239999' : '#2AABAB',
+                ...styles.btnSave,
+                opacity: !receiverDataFilled ? 0.5 : 1,
                 cursor: !receiverDataFilled ? 'not-allowed' : 'pointer',
               }}
               onMouseEnter={() => setHoveredBtn('save')}
@@ -327,61 +350,193 @@ function DeliveryDetail() {
       <div style={styles.content}>
         {/* Left Column */}
         <div style={styles.leftColumn}>
-          {/* Client Info Card */}
+          {/* Info Card with Two Tables */}
           <div style={styles.card}>
-            <h2 style={styles.cardTitle}>Информация о получателе</h2>
-            <div style={styles.infoGrid}>
-              <div style={styles.infoItem}>
-                <span style={styles.infoLabel}>Имя пользователя</span>
-                <span style={styles.infoValue}>{delivery.receiver_username}</span>
+            <h2 style={styles.cardTitle}>Информация о доставке</h2>
+            <div style={styles.twoColumnLayout}>
+              {/* Left - Отправитель + Доставка */}
+              <div style={styles.infoTableWrapper}>
+                <div style={styles.infoTableHeader}>
+                  <span style={styles.gradientText}>Отправитель</span>
+                </div>
+                <table style={styles.infoTableInner}>
+                  <tbody>
+                    <tr>
+                      <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>ID</span></td>
+                      <td style={styles.infoTdValue}>{delivery.sender_username || <span style={styles.notSet}>—</span>}</td>
+                    </tr>
+                    <tr>
+                      <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>ФИО</span></td>
+                      <td style={styles.infoTdValue}>{delivery.sender_name || <span style={styles.notSet}>Не указано</span>}</td>
+                    </tr>
+                    <tr>
+                      <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>Телефон</span></td>
+                      <td style={styles.infoTdValue}>{delivery.sender_phone || <span style={styles.notSet}>Не указан</span>}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <div style={{ ...styles.infoTableHeader, marginTop: '20px' }}>
+                  <span style={styles.gradientText}>Доставка</span>
+                </div>
+                <table style={styles.infoTableInner}>
+                  <tbody>
+                    <tr>
+                      <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>Описание груза</span></td>
+                      <td style={styles.infoTdValue}>{delivery.product_description || <span style={styles.notSet}>Не указано</span>}</td>
+                    </tr>
+                    <tr>
+                      <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>Тип доставки</span></td>
+                      <td style={styles.infoTdValue}>{delivery.delivery_type_name || <span style={styles.notSet}>Не выбран</span>}</td>
+                    </tr>
+                    <tr>
+                      <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>Адрес</span></td>
+                      <td style={styles.infoTdValue}>
+                        {delivery.delivery_option === 'pickup'
+                          ? 'Забрать с пункта выдачи'
+                          : delivery.delivery_option === 'home_delivery' && delivery.home_delivery_data
+                            ? `${delivery.home_delivery_data.city || ''}${delivery.home_delivery_data.street ? ', ' + delivery.home_delivery_data.street : ''}${delivery.home_delivery_data.house ? ', д.' + delivery.home_delivery_data.house : ''}${delivery.home_delivery_data.apartment ? ', кв.' + delivery.home_delivery_data.apartment : ''}`
+                            : <span style={styles.notSet}>Не указан</span>
+                        }
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-              <div style={styles.infoItem}>
-                <span style={styles.infoLabel}>ФИО получателя</span>
-                <span style={styles.infoValue}>{delivery.receiver_full_name || 'Не указано'}</span>
-              </div>
-              <div style={styles.infoItem}>
-                <span style={styles.infoLabel}>Адрес доставки</span>
-                <span style={styles.infoValue}>{delivery.receiver_address || 'Не указан'}</span>
-              </div>
-              <div style={styles.infoItem}>
-                <span style={styles.infoLabel}>Телефон</span>
-                <span style={styles.infoValue}>{delivery.receiver_phone || 'Не указан'}</span>
-              </div>
-              <div style={styles.infoItem}>
-                <span style={styles.infoLabel}>Тип доставки (выбран клиентом)</span>
-                <span style={styles.infoValue}>{delivery.delivery_type_name || 'Не выбран'}</span>
+
+              {/* Right - Получатель + Способ получения и оплата */}
+              <div style={styles.infoTableWrapper}>
+                <div style={styles.infoTableHeader}>
+                  <span style={styles.gradientText}>Получатель</span>
+                </div>
+                <table style={styles.infoTableInner}>
+                  <tbody>
+                    <tr>
+                      <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>ID</span></td>
+                      <td style={styles.infoTdValue}>{delivery.receiver_username}</td>
+                    </tr>
+                    <tr>
+                      <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>ФИО</span></td>
+                      <td style={styles.infoTdValue}>{delivery.receiver_full_name || <span style={styles.notSet}>Не указано</span>}</td>
+                    </tr>
+                    <tr>
+                      <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>Телефон</span></td>
+                      <td style={styles.infoTdValue}>{delivery.receiver_phone || <span style={styles.notSet}>Не указан</span>}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <div style={{ ...styles.infoTableHeader, marginTop: '20px' }}>
+                  <span style={styles.gradientText}>Способ получения и оплата</span>
+                </div>
+                <table style={styles.infoTableInner}>
+                  <tbody>
+                    <tr>
+                      <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>Способ получения</span></td>
+                      <td style={styles.infoTdValue}>{delivery.delivery_option_display || <span style={styles.notSet}>Не выбрано</span>}</td>
+                    </tr>
+                    <tr>
+                      <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>Сумма</span></td>
+                      <td style={styles.infoTdValue}>{delivery.total_price ? `${delivery.total_price}$` : <span style={styles.notSet}>Неизвестно</span>}</td>
+                    </tr>
+                    <tr>
+                      <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>Оплачено</span></td>
+                      <td style={styles.infoTdValue}>
+                        <span style={{ color: delivery.is_paid ? '#10b981' : '#ef4444', fontWeight: '600' }}>
+                          {delivery.is_paid ? 'Да' : 'Нет'}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
 
-          {/* Product Info Card */}
-          <div style={styles.card}>
-            <h2 style={styles.cardTitle}>Информация о грузе</h2>
-            <div style={styles.infoGrid}>
-              <div style={styles.infoItem}>
-                <span style={styles.infoLabel}>Описание товара</span>
-                <span style={styles.infoValue}>{delivery.product_description || 'Не указано'}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Sender Info Card */}
-          {delivery.sender_username && (
+          {/* Full Address Card - shows when status is oplata/dostavka/vidan and paid */}
+          {['oplata', 'dostavka', 'vidan'].includes(delivery.status) && delivery.is_paid && (
             <div style={styles.card}>
-              <h2 style={styles.cardTitle}>Информация об отправителе</h2>
-              <div style={styles.infoGrid}>
-                <div style={styles.infoItem}>
-                  <span style={styles.infoLabel}>Имя пользователя</span>
-                  <span style={styles.infoValue}>{delivery.sender_username}</span>
-                </div>
-                <div style={styles.infoItem}>
-                  <span style={styles.infoLabel}>ФИО</span>
-                  <span style={styles.infoValue}>{delivery.sender_name || 'Не указано'}</span>
-                </div>
-                <div style={styles.infoItem}>
-                  <span style={styles.infoLabel}>Телефон</span>
-                  <span style={styles.infoValue}>{delivery.sender_phone || 'Не указан'}</span>
-                </div>
+              <h2 style={styles.cardTitle}>Полный адрес</h2>
+              <div style={styles.infoTableWrapper}>
+                <table style={styles.infoTableInner}>
+                  <tbody>
+                    {/* Pickup address info */}
+                    {delivery.delivery_option === 'pickup' && (
+                      <>
+                        <tr>
+                          <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>Адрес</span></td>
+                          <td style={styles.infoTdValue}>М.О. г.Дзержинский, Денисьевский проезд 2А, пункт OZON</td>
+                        </tr>
+                        <tr>
+                          <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>Телефон</span></td>
+                          <td style={styles.infoTdValue}>+7 901 523-78-55</td>
+                        </tr>
+                        <tr>
+                          <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>Контакт</span></td>
+                          <td style={styles.infoTdValue}>Сергей</td>
+                        </tr>
+                      </>
+                    )}
+
+                    {/* Home delivery address info */}
+                    {delivery.delivery_option === 'home_delivery' && delivery.home_delivery_data && (
+                      <>
+                        {delivery.home_delivery_data.city && (
+                          <tr>
+                            <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>Город</span></td>
+                            <td style={styles.infoTdValue}>{delivery.home_delivery_data.city}</td>
+                          </tr>
+                        )}
+                        {delivery.home_delivery_data.district && (
+                          <tr>
+                            <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>Район</span></td>
+                            <td style={styles.infoTdValue}>{delivery.home_delivery_data.district}</td>
+                          </tr>
+                        )}
+                        {delivery.home_delivery_data.street && (
+                          <tr>
+                            <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>Улица</span></td>
+                            <td style={styles.infoTdValue}>{delivery.home_delivery_data.street}</td>
+                          </tr>
+                        )}
+                        {delivery.home_delivery_data.house && (
+                          <tr>
+                            <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>Дом</span></td>
+                            <td style={styles.infoTdValue}>{delivery.home_delivery_data.house}</td>
+                          </tr>
+                        )}
+                        {delivery.home_delivery_data.entrance && (
+                          <tr>
+                            <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>Подъезд</span></td>
+                            <td style={styles.infoTdValue}>{delivery.home_delivery_data.entrance}</td>
+                          </tr>
+                        )}
+                        {delivery.home_delivery_data.floor && (
+                          <tr>
+                            <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>Этаж</span></td>
+                            <td style={styles.infoTdValue}>{delivery.home_delivery_data.floor}</td>
+                          </tr>
+                        )}
+                        {delivery.home_delivery_data.apartment && (
+                          <tr>
+                            <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>Квартира</span></td>
+                            <td style={styles.infoTdValue}>{delivery.home_delivery_data.apartment}</td>
+                          </tr>
+                        )}
+                      </>
+                    )}
+
+                    {/* No delivery option selected */}
+                    {!delivery.delivery_option && (
+                      <tr>
+                        <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>Статус</span></td>
+                        <td style={styles.infoTdValue}>
+                          <span style={{ color: '#92400e' }}>Ожидание выбора клиентом</span>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
@@ -403,89 +558,90 @@ function DeliveryDetail() {
         {/* Right Column - Admin Edit */}
         <div style={styles.rightColumn}>
           <div style={styles.card}>
-            <h2 style={styles.cardTitle}>
-              {isDeliveryCompleted ? 'Данные доставки' : 'Заполнить данные (Администратор)'}
+            <h2 style={{...styles.cardTitle, ...styles.gradientText}}>
+              {isDeliveryCompleted ? 'Данные доставки' : 'Заполнить данные'}
             </h2>
 
-            {isDeliveryCompleted ? (
-              <div style={styles.completedCard}>
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="#2AABAB" style={{ marginBottom: 12 }}>
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
-                <span style={styles.completedTitle}>Доставка завершена</span>
-                <span style={styles.completedText}>
-                  Эта доставка была успешно выдана получателю. Редактирование данных недоступно.
-                </span>
-                <div style={styles.completedInfo}>
-                  {/* Parse and display places with weights */}
-                  {delivery.place_number ? (() => {
-                    const placesArr = delivery.place_number.split(',').map(p => p.trim()).filter(p => p);
-                    const parsedPlaces = placesArr.map(p => {
-                      if (p.includes(':')) {
-                        const [num, weight] = p.split(':');
-                        return { number: num.trim(), weight: parseFloat(weight.trim()) || 0 };
-                      }
-                      return { number: p, weight: 0 };
-                    });
-                    const totalWeight = parsedPlaces.reduce((sum, p) => sum + p.weight, 0);
+            {isDeliveryCompleted ? (() => {
+              const placesArr = delivery.place_number ? delivery.place_number.split(',').map(p => p.trim()).filter(p => p) : [];
+              const parsedPlaces = placesArr.map(p => {
+                if (p.includes(':')) {
+                  const parts = p.split(':');
+                  return {
+                    number: parts[0]?.trim() || '',
+                    weight: parseFloat(parts[1]?.trim()) || 0,
+                    volume: parseFloat(parts[2]?.trim()) || 0,
+                    barcode: parts[3]?.trim() || ''
+                  };
+                }
+                return { number: p, weight: 0, volume: 0, barcode: '' };
+              });
+              const totalWeight = parsedPlaces.reduce((sum, p) => sum + p.weight, 0);
+              const totalVolume = parsedPlaces.reduce((sum, p) => sum + p.volume, 0);
+              const vidanStatus = delivery.status_history?.find(h => h.to_status === 'vidan');
+              const getPlacesWord = (count) => {
+                if (count === 1) return 'место';
+                if (count >= 2 && count <= 4) return 'места';
+                return 'мест';
+              };
 
-                    return (
-                      <>
-                        {parsedPlaces.map((place, idx) => (
-                          <div key={idx} style={styles.completedInfoRow}>
-                            <span style={styles.completedInfoLabel}>Место {place.number}</span>
-                            <span style={styles.completedInfoValue}>{place.weight ? `${place.weight} кг` : '—'}</span>
-                          </div>
-                        ))}
-                        {parsedPlaces.length > 1 && (
-                          <div style={{ ...styles.completedInfoRow, borderBottom: 'none', paddingTop: '10px', marginTop: '4px', borderTop: '2px solid #2AABAB' }}>
-                            <span style={{ ...styles.completedInfoLabel, fontWeight: '600', color: '#2AABAB' }}>
-                              Итого: {parsedPlaces.length} {parsedPlaces.length === 1 ? 'место' : parsedPlaces.length < 5 ? 'места' : 'мест'}
-                            </span>
-                            <span style={{ ...styles.completedInfoValue, fontWeight: '600', color: '#2AABAB' }}>
-                              {totalWeight > 0 ? `${totalWeight.toFixed(1)} кг` : '—'}
-                            </span>
-                          </div>
-                        )}
-                      </>
-                    );
-                  })() : (
-                    <div style={styles.completedInfoRow}>
-                      <span style={styles.completedInfoLabel}>Места:</span>
-                      <span style={styles.completedInfoValue}>—</span>
+              return (
+                <div>
+                  {/* Places Table */}
+                  {parsedPlaces.length > 0 && (
+                    <div style={styles.placesTableContainer}>
+                      <span style={styles.placesTableTitle}>Места</span>
+                      <div style={styles.placesTableHeader}>
+                        <span style={{...styles.placesTableHeaderCell, flex: 1}}>Место</span>
+                        <span style={{...styles.placesTableHeaderCell, flex: 1}}>Вес</span>
+                        <span style={{...styles.placesTableHeaderCell, flex: 1}}>Объём</span>
+                        <span style={{...styles.placesTableHeaderCell, flex: 1.2, borderRight: 'none'}}>Баркод</span>
+                      </div>
+                      {parsedPlaces.map((place, idx) => (
+                        <div key={idx} style={{...styles.placesTableRow, backgroundColor: idx % 2 === 0 ? '#F8FAFA' : '#fff'}}>
+                          <span style={{...styles.placesTableCell, flex: 1, fontWeight: '600', color: '#2AABAB'}}>{place.number}</span>
+                          <span style={{...styles.placesTableCell, flex: 1}}>{place.weight ? `${place.weight} кг` : '—'}</span>
+                          <span style={{...styles.placesTableCell, flex: 1}}>{place.volume > 0 ? `${place.volume.toFixed(1)} м³` : '—'}</span>
+                          <span style={{...styles.placesTableCell, flex: 1.2, borderRight: 'none'}}>{place.barcode || '—'}</span>
+                        </div>
+                      ))}
                     </div>
                   )}
-                  <div style={styles.completedInfoRow}>
-                    <span style={styles.completedInfoLabel}>Тип груза:</span>
-                    <span style={styles.completedInfoValue}>{delivery.cargo_type || '—'}</span>
-                  </div>
-                  <div style={styles.completedInfoRow}>
-                    <span style={styles.completedInfoLabel}>Дата отправки:</span>
-                    <span style={styles.completedInfoValue}>
-                      {delivery.shipment_date ? new Date(delivery.shipment_date).toLocaleDateString('ru-RU') : '—'}
+
+                  {/* Summary Line */}
+                  <div style={styles.summaryLine}>
+                    <span style={styles.summaryText}>
+                      {parsedPlaces.length} {getPlacesWord(parsedPlaces.length)} · {totalWeight > 0 ? `${totalWeight.toFixed(1)} кг` : '—'}
+                      {totalVolume > 0 ? ` · ${totalVolume.toFixed(1)} м³` : ''}
+                      {delivery.total_price ? ` · ${delivery.total_price}$` : ''}
                     </span>
                   </div>
-                  {delivery.admin_notes && (
-                    <div style={styles.completedInfoRow}>
-                      <span style={styles.completedInfoLabel}>Заметки:</span>
-                      <span style={styles.completedInfoValue}>{delivery.admin_notes}</span>
+
+                  {/* Dates */}
+                  <div style={styles.datesRow}>
+                    <div style={styles.dateBlock}>
+                      <span style={styles.dateLabel}>Дата отправки</span>
+                      <span style={styles.dateValue}>{delivery.shipment_date ? new Date(delivery.shipment_date).toLocaleDateString('ru-RU') : '—'}</span>
                     </div>
-                  )}
+                    <div style={styles.dateBlock}>
+                      <span style={styles.dateLabel}>Дата выдачи</span>
+                      <span style={styles.dateValue}>{vidanStatus ? new Date(vidanStatus.created_at).toLocaleDateString('ru-RU') : '—'}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ) : !receiverDataFilled ? (
+              );
+            })() : !receiverDataFilled ? (
               <div style={styles.warningCard}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="#2AABAB" style={{ marginBottom: 8 }}>
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
                 </svg>
                 <span style={styles.warningTitle}>Ожидание данных получателя</span>
                 <span style={styles.warningText}>
-                  Получатель должен заполнить свои данные (ФИО, адрес, телефон, тип доставки) прежде чем вы сможете заполнить данные администратора.
+                  Получатель должен заполнить свои данные (ФИО, телефон, тип доставки) прежде чем вы сможете заполнить данные администратора.
                 </span>
                 <div style={styles.missingFields}>
                   <span style={styles.missingFieldsTitle}>Не заполнено:</span>
                   {!delivery.receiver_full_name && <span style={styles.missingField}>• ФИО получателя</span>}
-                  {!delivery.receiver_address && <span style={styles.missingField}>• Адрес доставки</span>}
                   {!delivery.receiver_phone && <span style={styles.missingField}>• Телефон</span>}
                   {!delivery.delivery_type && <span style={styles.missingField}>• Тип доставки</span>}
                 </div>
@@ -508,21 +664,44 @@ function DeliveryDetail() {
                   </div>
                   {places.map((place, index) => (
                     <div key={index} style={styles.placeNumberRow}>
-                      <input
-                        type="text"
-                        value={place.number}
-                        onChange={e => updatePlace(index, 'number', e.target.value)}
-                        placeholder={`Место ${index + 1}`}
-                        style={styles.placeInput}
-                      />
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={place.weight}
-                        onChange={e => updatePlace(index, 'weight', e.target.value)}
-                        placeholder="Вес (кг)"
-                        style={styles.weightInput}
-                      />
+                      <div style={styles.gradientBorderWrapper}>
+                        <input
+                          type="text"
+                          value={place.number}
+                          onChange={e => updatePlace(index, 'number', e.target.value)}
+                          placeholder={`Место ${index + 1}`}
+                          style={styles.placeInput}
+                        />
+                      </div>
+                      <div style={styles.gradientBorderWrapperFixed}>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={place.weight}
+                          onChange={e => updatePlace(index, 'weight', e.target.value)}
+                          placeholder="Вес (кг)"
+                          style={styles.weightInput}
+                        />
+                      </div>
+                      <div style={styles.gradientBorderWrapperFixed}>
+                        <input
+                          type="number"
+                          step="0.001"
+                          value={place.volume}
+                          onChange={e => updatePlace(index, 'volume', e.target.value)}
+                          placeholder="Объём (м³)"
+                          style={styles.volumeInput}
+                        />
+                      </div>
+                      <div style={styles.gradientBorderWrapperFixed}>
+                        <input
+                          type="text"
+                          value={place.barcode}
+                          onChange={e => updatePlace(index, 'barcode', e.target.value)}
+                          placeholder="Баркод"
+                          style={styles.barcodeInput}
+                        />
+                      </div>
                       {places.length > 1 && (
                         <button
                           type="button"
@@ -539,41 +718,21 @@ function DeliveryDetail() {
                   ))}
                   {places.filter(p => p.number.trim()).length > 0 && (
                     <div style={styles.placeSummary}>
-                      Мест: {places.filter(p => p.number.trim()).length} | Общий вес: {places.reduce((sum, p) => sum + (parseFloat(p.weight) || 0), 0).toFixed(1)} кг
+                      Мест: {places.filter(p => p.number.trim()).length} | Вес: {places.reduce((sum, p) => sum + (parseFloat(p.weight) || 0), 0).toFixed(1)} кг | Объём: {places.reduce((sum, p) => sum + (parseFloat(p.volume) || 0), 0).toFixed(1)} м³
                     </div>
                   )}
                 </div>
 
                 <div style={styles.formGroup}>
-                  <label style={styles.label}>Тип груза</label>
-                  <input
-                    type="text"
-                    value={editForm.cargo_type}
-                    onChange={e => setEditForm({ ...editForm, cargo_type: e.target.value })}
-                    placeholder="Одежда"
-                    style={styles.input}
-                  />
-                </div>
-
-                <div style={styles.formGroup}>
                   <label style={styles.label}>Дата отправки</label>
-                  <input
-                    type="date"
-                    value={editForm.shipment_date}
-                    onChange={e => setEditForm({ ...editForm, shipment_date: e.target.value })}
-                    style={styles.input}
-                  />
-                </div>
-
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Заметки администратора</label>
-                  <textarea
-                    value={editForm.admin_notes}
-                    onChange={e => setEditForm({ ...editForm, admin_notes: e.target.value })}
-                    placeholder="Внутренние заметки..."
-                    style={styles.textarea}
-                    rows={3}
-                  />
+                  <div style={styles.gradientBorderWrapperFull}>
+                    <input
+                      type="date"
+                      value={editForm.shipment_date}
+                      onChange={e => setEditForm({ ...editForm, shipment_date: e.target.value })}
+                      style={styles.input}
+                    />
+                  </div>
                 </div>
 
                 {/* Calculated Price */}
@@ -581,14 +740,24 @@ function DeliveryDetail() {
                   const totalWeight = places.reduce((sum, p) => sum + (parseFloat(p.weight) || 0), 0);
                   if (totalWeight > 0 && delivery.delivery_type_price) {
                     return (
-                      <div style={styles.priceCard}>
-                        <span style={styles.priceLabel}>Расчётная сумма:</span>
-                        <span style={styles.priceValue}>
-                          {(totalWeight * parseFloat(delivery.delivery_type_price)).toFixed(0)}$
-                        </span>
-                        <span style={styles.priceCalc}>
-                          ({totalWeight.toFixed(1)} кг x {delivery.delivery_type_price}$/кг)
-                        </span>
+                      <div style={styles.priceTableWrapper}>
+                        <table style={styles.priceTable}>
+                          <tbody>
+                            <tr>
+                              <td style={styles.priceTableLabel}>
+                                <span style={styles.infoTdLabelText}>Общая сумма</span>
+                              </td>
+                              <td style={styles.priceTableValue}>
+                                <span style={{ color: '#000', fontWeight: '600', fontSize: '15px' }}>
+                                  {(totalWeight * parseFloat(delivery.delivery_type_price)).toFixed(0)}$
+                                </span>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                        <div style={{ color: '#6d7175', fontSize: '11px', marginTop: '6px', paddingLeft: '2px' }}>
+                          {totalWeight.toFixed(1)} кг × {delivery.delivery_type_price}$/кг
+                        </div>
                       </div>
                     );
                   }
@@ -598,22 +767,49 @@ function DeliveryDetail() {
             )}
           </div>
 
-          {/* Payment Status */}
-          <div style={styles.card}>
-            <h2 style={styles.cardTitle}>Оплата</h2>
-            <div style={styles.paymentStatus}>
-              <span style={{
-                ...styles.paymentBadge,
-                backgroundColor: delivery.is_paid ? '#d1fae5' : '#fee2e2',
-                color: delivery.is_paid ? '#065f46' : '#991b1b',
-              }}>
-                {delivery.is_paid ? 'ОПЛАЧЕНО' : 'НЕ ОПЛАЧЕНО'}
-              </span>
-              {delivery.total_price && (
-                <span style={styles.totalPrice}>{delivery.total_price}$</span>
-              )}
+          {/* Chestniy Znak (Honest Mark) */}
+          {delivery.chestniy_znak && (
+            <div style={styles.card}>
+              <h2 style={{...styles.cardTitle, ...styles.gradientText}}>Честный знак</h2>
+              <div style={styles.infoTableWrapper}>
+                <table style={styles.infoTableInner}>
+                  <tbody>
+                    <tr>
+                      <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>Кол-во единиц</span></td>
+                      <td style={styles.infoTdValue}>{delivery.chestniy_znak.units_count || '—'}</td>
+                    </tr>
+                    <tr>
+                      <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>Компания</span></td>
+                      <td style={styles.infoTdValue}>{delivery.chestniy_znak.company_name || '—'}</td>
+                    </tr>
+                    <tr>
+                      <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>ИНН</span></td>
+                      <td style={styles.infoTdValue}>{delivery.chestniy_znak.inn || '—'}</td>
+                    </tr>
+                    <tr>
+                      <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>Налогообложение</span></td>
+                      <td style={styles.infoTdValue}>{delivery.chestniy_znak.tax_type_display || '—'}</td>
+                    </tr>
+                    {delivery.chestniy_znak.specification_url && (
+                      <tr>
+                        <td style={styles.infoTdLabel}><span style={styles.infoTdLabelText}>Спецификация</span></td>
+                        <td style={styles.infoTdValue}>
+                          <a
+                            href={delivery.chestniy_znak.specification_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{color: '#000', textDecoration: 'underline'}}
+                          >
+                            Скачать файл
+                          </a>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Status History - Collapsible */}
           <div style={styles.card}>
@@ -621,8 +817,8 @@ function DeliveryDetail() {
               style={styles.historyHeaderRow}
               onClick={() => setHistoryExpanded(!historyExpanded)}
             >
-              <h2 style={{ ...styles.cardTitle, margin: 0, cursor: 'pointer' }}>
-                История статуса {memoizedStatusHistory.length > 0 && `(${memoizedStatusHistory.length})`}
+              <h2 style={{ ...styles.cardTitle, ...styles.gradientText, margin: 0, cursor: 'pointer' }}>
+                История статуса
               </h2>
               <button style={styles.historyExpandBtn}>
                 <svg
@@ -641,13 +837,21 @@ function DeliveryDetail() {
                 <div style={styles.historyList}>
                   {memoizedStatusHistory.map((history, index) => {
                     const historyStatusInfo = getStatusInfo(history.to_status);
+                    const total = memoizedStatusHistory.length;
+                    const progress = total === 1 ? 1 : index / (total - 1);
+                    const r = Math.round(42 + (10 - 42) * progress);
+                    const g = Math.round(171 + (37 - 171) * progress);
+                    const b = Math.round(171 + (53 - 171) * progress);
+                    const dotColor = `rgb(${r}, ${g}, ${b})`;
                     return (
                       <div key={history.id || index} style={styles.historyItem}>
-                        <div style={styles.historyDot} />
-                        {index < memoizedStatusHistory.length - 1 && <div style={styles.historyLine} />}
+                        <div style={{...styles.historyDot, backgroundColor: dotColor}} />
+                        {index < memoizedStatusHistory.length - 1 && (
+                          <div style={{...styles.historyLine, background: `linear-gradient(to bottom, ${dotColor}, rgb(${Math.round(42 + (10 - 42) * ((index + 1) / (total - 1)))}, ${Math.round(171 + (37 - 171) * ((index + 1) / (total - 1)))}, ${Math.round(171 + (53 - 171) * ((index + 1) / (total - 1)))}))`}} />
+                        )}
                         <div style={styles.historyContent}>
                           <div style={styles.historyHeader}>
-                            <span style={styles.historyStatus}>
+                            <span style={styles.historyStatusGradient}>
                               {history.to_status_display || historyStatusInfo.label}
                             </span>
                             <span style={styles.historyDate}>
@@ -681,7 +885,7 @@ function DeliveryDetail() {
                                   style={styles.historyPhoto}
                                   loading="lazy"
                                   decoding="async"
-                                  onClick={() => window.open(photo.photo_url, '_blank')}
+                                  onClick={() => setViewingImage(photo.photo_url)}
                                 />
                               ))}
                             </div>
@@ -703,6 +907,14 @@ function DeliveryDetail() {
           </div>
         </div>
       </div>
+
+      {/* Image Lightbox */}
+      {viewingImage && (
+        <div style={styles.lightboxOverlay} onClick={() => setViewingImage(null)}>
+          <button style={styles.lightboxClose} onClick={() => setViewingImage(null)}>×</button>
+          <img src={viewingImage} alt="" style={styles.lightboxImage} onClick={e => e.stopPropagation()} />
+        </div>
+      )}
     </div>
   );
 }
@@ -748,15 +960,32 @@ const styles = {
   },
   backBtn: {
     display: 'flex',
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: '4px',
     padding: '6px 12px',
     backgroundColor: '#fff',
-    border: '1px solid #c9cccf',
+    border: '1px solid #2AABAB',
     borderRadius: '8px',
     fontSize: '13px',
-    color: '#5c5f62',
     cursor: 'pointer',
+    lineHeight: '1',
+  },
+  backBtnContent: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    verticalAlign: 'middle',
+  },
+  backBtnText: {
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+    fontWeight: '500',
+    lineHeight: '1',
+    display: 'block',
   },
   deliveryTypeIcon: {
     display: 'flex',
@@ -766,8 +995,11 @@ const styles = {
   title: {
     fontSize: '20px',
     fontWeight: '600',
-    color: '#303030',
     margin: 0,
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
   },
   deliveryNumberSmall: {
     fontSize: '12px',
@@ -779,6 +1011,8 @@ const styles = {
     borderRadius: '16px',
     fontSize: '13px',
     fontWeight: '500',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    color: '#fff',
   },
   btnPrimary: {
     padding: '8px 16px',
@@ -799,6 +1033,33 @@ const styles = {
     fontSize: '13px',
     fontWeight: '500',
     color: '#303030',
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+  },
+  btnDelete: {
+    padding: '8px 16px',
+    backgroundColor: '#fff',
+    border: '1px solid #2AABAB',
+    borderRadius: '8px',
+    fontSize: '13px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+  },
+  btnDeleteText: {
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+  },
+  btnSave: {
+    padding: '8px 16px',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '13px',
+    fontWeight: '600',
+    color: '#fff',
     cursor: 'pointer',
     transition: 'all 0.15s',
   },
@@ -857,6 +1118,102 @@ const styles = {
     fontSize: '14px',
     color: '#303030',
   },
+  infoSection: {
+    marginBottom: '20px',
+    paddingBottom: '16px',
+    borderBottom: '1px solid #e1e3e5',
+  },
+  infoSectionHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '12px',
+  },
+  infoSectionTitle: {
+    fontSize: '14px',
+    fontWeight: '600',
+    color: '#303030',
+  },
+  infoRows: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  infoRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: '6px 0',
+  },
+  infoRowLabel: {
+    fontSize: '13px',
+    color: '#6d7175',
+    fontWeight: '500',
+    minWidth: '120px',
+  },
+  infoRowValue: {
+    fontSize: '13px',
+    color: '#303030',
+    fontWeight: '500',
+    textAlign: 'right',
+    flex: 1,
+  },
+  notSet: {
+    color: '#9ca3af',
+    fontStyle: 'italic',
+  },
+  twoColumnLayout: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '20px',
+  },
+  deliveryTableCenter: {
+    marginTop: '20px',
+    maxWidth: '500px',
+    marginLeft: 'auto',
+    marginRight: 'auto',
+  },
+  infoTableWrapper: {
+    flex: 1,
+  },
+  infoTableHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '12px',
+    fontSize: '14px',
+    fontWeight: '600',
+  },
+  gradientText: {
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+  },
+  infoTableInner: {
+    width: '100%',
+    borderCollapse: 'collapse',
+  },
+  infoTdLabel: {
+    padding: '8px 12px',
+    fontSize: '13px',
+    fontWeight: '500',
+    borderBottom: '1px solid #e1e3e5',
+    borderRight: '1px solid #e1e3e5',
+    width: '120px',
+  },
+  infoTdLabelText: {
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+  },
+  infoTdValue: {
+    padding: '8px 12px',
+    fontSize: '13px',
+    color: '#000',
+    borderBottom: '1px solid #e1e3e5',
+  },
 
   formGroup: {
     marginBottom: '16px',
@@ -880,51 +1237,91 @@ const styles = {
     justifyContent: 'center',
     width: '28px',
     height: '28px',
-    backgroundColor: '#2AABAB',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
     border: 'none',
     borderRadius: '6px',
     cursor: 'pointer',
-    transition: 'background-color 0.15s',
+    transition: 'opacity 0.15s',
   },
   placeNumberRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
-    marginBottom: '8px',
+    gap: '4px',
+    marginBottom: '6px',
+  },
+  gradientBorderWrapper: {
+    flex: 1,
+    minWidth: '60px',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    borderRadius: '8px',
+    padding: '1px',
+  },
+  gradientBorderWrapperFixed: {
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    borderRadius: '8px',
+    padding: '1px',
+  },
+  gradientBorderWrapperFull: {
+    width: '100%',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    borderRadius: '8px',
+    padding: '1px',
   },
   placeInput: {
-    flex: 1,
-    padding: '10px 12px',
-    fontSize: '14px',
-    border: '1px solid #c9cccf',
-    borderRadius: '8px',
+    width: '100%',
+    padding: '8px 8px',
+    fontSize: '13px',
+    border: 'none',
+    borderRadius: '7px',
     outline: 'none',
     boxSizing: 'border-box',
+    backgroundColor: '#fff',
   },
   weightInput: {
-    width: '100px',
-    padding: '10px 12px',
-    fontSize: '14px',
-    border: '1px solid #c9cccf',
-    borderRadius: '8px',
+    width: '65px',
+    padding: '8px 6px',
+    fontSize: '13px',
+    border: 'none',
+    borderRadius: '7px',
     outline: 'none',
     boxSizing: 'border-box',
+    backgroundColor: '#fff',
+  },
+  volumeInput: {
+    width: '70px',
+    padding: '8px 6px',
+    fontSize: '13px',
+    border: 'none',
+    borderRadius: '7px',
+    outline: 'none',
+    boxSizing: 'border-box',
+    backgroundColor: '#fff',
+  },
+  barcodeInput: {
+    width: '80px',
+    padding: '8px 6px',
+    fontSize: '13px',
+    border: 'none',
+    borderRadius: '7px',
+    outline: 'none',
+    boxSizing: 'border-box',
+    backgroundColor: '#fff',
   },
   removePlaceBtn: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '32px',
-    height: '38px',
+    width: '28px',
+    height: '32px',
     backgroundColor: '#fef2f2',
     border: '1px solid #fecaca',
-    borderRadius: '8px',
+    borderRadius: '6px',
     cursor: 'pointer',
     transition: 'all 0.15s',
   },
   placeSummary: {
     fontSize: '12px',
-    color: '#6d7175',
+    color: '#000',
     fontStyle: 'italic',
     marginTop: '4px',
   },
@@ -932,10 +1329,11 @@ const styles = {
     width: '100%',
     padding: '10px 12px',
     fontSize: '14px',
-    border: '1px solid #c9cccf',
-    borderRadius: '8px',
+    border: 'none',
+    borderRadius: '7px',
     outline: 'none',
     boxSizing: 'border-box',
+    backgroundColor: '#fff',
   },
   select: {
     width: '100%',
@@ -958,27 +1356,28 @@ const styles = {
     resize: 'vertical',
   },
 
-  priceCard: {
-    backgroundColor: '#f6f6f7',
-    borderRadius: '8px',
-    padding: '16px',
+  priceTableWrapper: {
     marginTop: '16px',
   },
-  priceLabel: {
+  priceTable: {
+    width: '100%',
+    borderCollapse: 'collapse',
+  },
+  priceTableLabel: {
+    padding: '10px 12px',
     fontSize: '13px',
-    color: '#6d7175',
-    display: 'block',
-    marginBottom: '4px',
+    fontWeight: '500',
+    borderTop: '1px solid #e1e3e5',
+    borderBottom: '1px solid #e1e3e5',
+    width: '120px',
+    verticalAlign: 'top',
   },
-  priceValue: {
-    fontSize: '24px',
-    fontWeight: '700',
-    color: '#2AABAB',
-    display: 'block',
-  },
-  priceCalc: {
-    fontSize: '12px',
-    color: '#8c9196',
+  priceTableValue: {
+    padding: '10px 12px',
+    fontSize: '13px',
+    borderTop: '1px solid #e1e3e5',
+    borderBottom: '1px solid #e1e3e5',
+    verticalAlign: 'top',
   },
 
   paymentStatus: {
@@ -1176,13 +1575,21 @@ const styles = {
     fontWeight: '600',
     color: '#2AABAB',
   },
+  historyStatusGradient: {
+    fontSize: '14px',
+    fontWeight: '600',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+  },
   historyDate: {
     fontSize: '12px',
-    color: '#6d7175',
+    color: '#000',
   },
   historyEmployee: {
     fontSize: '12px',
-    color: '#6d7175',
+    color: '#000',
   },
   historyCommentBox: {
     marginTop: '8px',
@@ -1193,12 +1600,12 @@ const styles = {
   historyCommentLabel: {
     display: 'block',
     fontSize: '11px',
-    color: '#999',
+    color: '#000',
     marginBottom: '4px',
   },
   historyCommentText: {
     fontSize: '13px',
-    color: '#1A1A1A',
+    color: '#000',
     lineHeight: '1.4',
   },
   historyPhotos: {
@@ -1227,6 +1634,182 @@ const styles = {
   historyEmptyText: {
     fontSize: '13px',
     color: '#2AABAB',
+  },
+
+  // Chestniy Znak styles
+  chestniyZnakInfo: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+  },
+  chestniyZnakRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '8px 0',
+    borderBottom: '1px solid #f0f0f0',
+  },
+  chestniyZnakLabel: {
+    fontSize: '13px',
+    fontWeight: '500',
+    color: '#6d7175',
+  },
+  chestniyZnakValue: {
+    fontSize: '14px',
+    fontWeight: '500',
+    color: '#303030',
+  },
+  chestniyZnakLink: {
+    fontSize: '14px',
+    fontWeight: '500',
+    color: '#2AABAB',
+    textDecoration: 'none',
+  },
+
+  // Completed delivery stats blocks
+  statsBlocksRow: {
+    display: 'flex',
+    gap: '12px',
+    marginBottom: '16px',
+    flexWrap: 'wrap',
+  },
+  statsBlockGradient: {
+    flex: '1 1 calc(25% - 12px)',
+    minWidth: '100px',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    borderRadius: '12px',
+    padding: '1.5px',
+  },
+  statsBlockInner: {
+    backgroundColor: '#fff',
+    borderRadius: '10px',
+    padding: '12px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  statsBlockLabel: {
+    fontSize: '12px',
+    color: '#6d7175',
+    marginBottom: '4px',
+  },
+  statsBlockValue: {
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#1A1A1A',
+  },
+
+  // Places table for completed delivery
+  placesTableContainer: {
+    marginBottom: '16px',
+    backgroundColor: '#fff',
+    borderRadius: '12px',
+    overflow: 'hidden',
+    border: '1px solid #E0E0E0',
+  },
+  placesTableTitle: {
+    fontSize: '14px',
+    fontWeight: '600',
+    padding: '12px',
+    display: 'block',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+  },
+  placesTableHeader: {
+    display: 'flex',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    padding: '10px 0',
+  },
+  placesTableHeaderCell: {
+    fontSize: '13px',
+    fontWeight: '600',
+    color: '#fff',
+    textAlign: 'center',
+    padding: '0 8px',
+    borderRight: '1px solid rgba(255,255,255,0.3)',
+  },
+  placesTableRow: {
+    display: 'flex',
+    borderTop: '1px solid #E0E0E0',
+  },
+  placesTableCell: {
+    fontSize: '13px',
+    color: '#1A1A1A',
+    textAlign: 'center',
+    padding: '12px 8px',
+    borderRight: '1px solid #E0E0E0',
+  },
+
+  // Summary line
+  summaryLine: {
+    padding: '12px 0',
+    textAlign: 'center',
+  },
+  summaryText: {
+    fontSize: '14px',
+    fontWeight: '600',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+  },
+
+  // Dates row
+  datesRow: {
+    display: 'flex',
+    gap: '16px',
+  },
+  dateBlock: {
+    flex: 1,
+    backgroundColor: '#F8FAFA',
+    borderRadius: '10px',
+    padding: '12px',
+    textAlign: 'center',
+  },
+  dateLabel: {
+    fontSize: '12px',
+    color: '#6d7175',
+    display: 'block',
+    marginBottom: '4px',
+  },
+  dateValue: {
+    fontSize: '14px',
+    fontWeight: '600',
+    color: '#1A1A1A',
+  },
+
+  // Lightbox styles
+  lightboxOverlay: {
+    position: 'fixed',
+    top: 56,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999,
+    cursor: 'pointer',
+  },
+  lightboxClose: {
+    position: 'absolute',
+    top: '20px',
+    right: '20px',
+    background: 'none',
+    border: 'none',
+    color: '#fff',
+    fontSize: '40px',
+    cursor: 'pointer',
+    zIndex: 10000,
+  },
+  lightboxImage: {
+    maxWidth: '90%',
+    maxHeight: '85%',
+    objectFit: 'contain',
+    cursor: 'default',
   },
 };
 
