@@ -117,11 +117,8 @@ function Layout({ children, setIsAuthenticated }) {
 
   const items = [
     { id: 'home', path: '/', label: 'Главная', icon: 'home' },
-    { id: 'orders', path: '/orders', label: 'Заказы', icon: 'orders', subs: [{ label: 'Пошив заказы', path: '/poshiv-orders', icon: 'scissors' }] },
     { id: 'deliveries', path: '/deliveries', label: 'Доставки', icon: 'deliveries' },
-    { id: 'products', path: '/products', label: 'Товары', icon: 'products', subs: [{ label: 'Черновики', path: '/products/drafts', icon: 'draft' }, { label: 'Товары пользователей', path: '/user-products', icon: 'users' }] },
     { id: 'customers', path: '/clients', label: 'Клиенты', icon: 'customers' },
-    { id: 'employees', path: '/employees', label: 'Сотрудники', icon: 'employees' },
     ...(isMainAdmin ? [{ id: 'admins', path: '/admins', label: 'Администраторы', icon: 'admins' }] : []),
     { id: 'support', path: '/support', label: 'Поддержка', icon: 'support' },
     { id: 'marketing', path: '/marketing', label: 'Маркетинг', icon: 'marketing' },

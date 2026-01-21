@@ -652,19 +652,7 @@ function DeliveryDetail() {
             ) : (
               <>
                 <div style={styles.formGroup}>
-                  <div style={styles.labelRow}>
-                    <label style={styles.label}>Места (груз)</label>
-                    <button
-                      type="button"
-                      style={styles.addPlaceBtn}
-                      onClick={addPlace}
-                      title="Добавить место"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 20 20" fill="#fff">
-                        <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"/>
-                      </svg>
-                    </button>
-                  </div>
+                  <label style={styles.label}>Места (груз)</label>
                   {places.map((place, index) => (
                     <div key={index} style={styles.placeNumberRow}>
                       <div style={styles.gradientBorderWrapper}>
@@ -719,6 +707,17 @@ function DeliveryDetail() {
                       )}
                     </div>
                   ))}
+                  <button
+                    type="button"
+                    style={styles.addPlaceBtnBelow}
+                    onClick={addPlace}
+                    title="Добавить место"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="#fff">
+                      <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"/>
+                    </svg>
+                    <span>Добавить место</span>
+                  </button>
                   {places.filter(p => p.number.trim()).length > 0 && (
                     <div style={styles.placeSummary}>
                       Мест: {places.filter(p => p.number.trim()).length} | Вес: {places.reduce((sum, p) => sum + (parseFloat(p.weight) || 0), 0).toFixed(1)} кг | Объём: {places.reduce((sum, p) => sum + (parseFloat(p.volume) || 0), 0).toFixed(1)} м³
@@ -1245,6 +1244,23 @@ const styles = {
     borderRadius: '6px',
     cursor: 'pointer',
     transition: 'opacity 0.15s',
+  },
+  addPlaceBtnBelow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    width: '100%',
+    padding: '10px 16px',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    transition: 'opacity 0.15s',
+    color: '#fff',
+    fontSize: '13px',
+    fontWeight: '500',
+    marginTop: '8px',
   },
   placeNumberRow: {
     display: 'flex',
