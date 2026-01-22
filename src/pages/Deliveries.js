@@ -323,6 +323,7 @@ function Deliveries() {
         )}
 
         {/* Table */}
+        <div style={styles.tableWrapper}>
         <table style={styles.table}>
           <thead>
             <tr>
@@ -382,6 +383,7 @@ function Deliveries() {
             })}
           </tbody>
         </table>
+        </div>
 
         {filteredDeliveries.length === 0 && (
           <div style={styles.empty}>
@@ -536,6 +538,9 @@ const styles = {
     padding: '0 12px',
     borderBottom: '1px solid #e1e3e5',
     overflowX: 'auto',
+    position: 'relative',
+    zIndex: 10,
+    backgroundColor: '#fff',
   },
   tabsLeft: {
     display: 'flex',
@@ -583,6 +588,11 @@ const styles = {
     transition: 'background-color 0.15s',
   },
 
+  tableWrapper: {
+    overflowX: 'auto',
+    position: 'relative',
+    zIndex: 1,
+  },
   table: {
     width: '100%',
     borderCollapse: 'collapse',

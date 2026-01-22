@@ -10,7 +10,16 @@ function Admins() {
   const [sortBy, setSortBy] = useState('created_desc');
   const [hoveredRow, setHoveredRow] = useState(null);
   const [hoveredBtn, setHoveredBtn] = useState(null);
+  const [showSearch, setShowSearch] = useState(false);
+  const [visiblePasswords, setVisiblePasswords] = useState({});
   const sortRef = useRef(null);
+
+  const togglePasswordVisibility = (adminId) => {
+    setVisiblePasswords(prev => ({
+      ...prev,
+      [adminId]: !prev[adminId]
+    }));
+  };
 
   // Modal states
   const [showModal, setShowModal] = useState(false);
@@ -23,6 +32,7 @@ function Admins() {
     password: '',
     full_name: '',
     phone: '',
+    position: '',
     is_active: true,
   });
 
@@ -69,15 +79,6 @@ function Admins() {
     }
   };
 
-  const getTabCount = (tabId) => {
-    switch (tabId) {
-      case 'all': return admins.length;
-      case 'active': return admins.filter(a => a.is_active).length;
-      case 'inactive': return admins.filter(a => !a.is_active).length;
-      default: return 0;
-    }
-  };
-
   const filteredAdmins = admins
     .filter(admin => {
       const matchesSearch =
@@ -98,11 +99,6 @@ function Admins() {
         default: return 0;
       }
     });
-
-  const getInitials = (name) => {
-    if (!name) return '?';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  };
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '—';
@@ -183,6 +179,7 @@ function Admins() {
       password: '',
       full_name: admin.full_name,
       phone: admin.phone || '',
+      position: admin.position || '',
       is_active: admin.is_active,
     });
     setShowModal(true);
@@ -195,6 +192,7 @@ function Admins() {
       password: '',
       full_name: '',
       phone: '',
+      position: '',
       is_active: true,
     });
   };
@@ -215,17 +213,11 @@ function Admins() {
       <div style={styles.header}>
         <h1 style={styles.title}>Администраторы</h1>
         <button
-          style={{
-            ...styles.addBtn,
-            backgroundColor: hoveredBtn === 'add' ? '#1a1a1a' : '#303030',
-            transform: hoveredBtn === 'add' ? 'translateY(-1px)' : 'none',
-          }}
+          style={styles.addBtn}
           onClick={() => {
             resetForm();
             setShowModal(true);
           }}
-          onMouseEnter={() => setHoveredBtn('add')}
-          onMouseLeave={() => setHoveredBtn(null)}
         >
           <svg width="16" height="16" viewBox="0 0 20 20" fill="#fff">
             <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"/>
@@ -238,107 +230,106 @@ function Admins() {
       {error && <div style={styles.errorBanner}>{error}</div>}
       {successMessage && <div style={styles.successBanner}>{successMessage}</div>}
 
-      {/* Tabs */}
-      <div style={styles.tabsRow}>
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            style={{
-              ...styles.tab,
-              borderBottomColor: activeTab === tab.id ? '#303030' : 'transparent',
-              color: activeTab === tab.id ? '#303030' : '#6d7175',
-              fontWeight: activeTab === tab.id ? '600' : '500',
-            }}
-          >
-            {tab.label}
-            <span style={{
-              ...styles.tabCount,
-              backgroundColor: activeTab === tab.id ? '#303030' : '#e4e5e7',
-              color: activeTab === tab.id ? '#fff' : '#6d7175',
-            }}>
-              {getTabCount(tab.id)}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {/* Search & Filters Panel */}
-      <div style={styles.filtersPanel}>
-        <div style={styles.searchBox}>
-          <svg width="16" height="16" viewBox="0 0 20 20" fill="#8c9196">
-            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"/>
-          </svg>
-          <input
-            type="text"
-            placeholder="Поиск по имени, телефону, логину..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={styles.searchInput}
-          />
-          {searchTerm && (
-            <button style={styles.clearSearch} onClick={() => setSearchTerm('')}>
-              <svg width="14" height="14" viewBox="0 0 20 20" fill="#8c9196">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
-              </svg>
-            </button>
-          )}
-        </div>
-
-        <div style={styles.filterActions}>
-          {/* Sort Dropdown */}
-          <div style={styles.sortWrapper} ref={sortRef}>
+      {/* Card container */}
+      <div style={styles.card}>
+        {/* Tabs */}
+        <div style={styles.tabsRow}>
+          <div style={styles.tabsLeft}>
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={activeTab === tab.id ? styles.tabActive : styles.tab}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <div style={styles.tabsRight}>
             <button
               style={{
-                ...styles.sortBtn,
-                backgroundColor: hoveredBtn === 'sort' || showSort ? '#f6f6f7' : '#fff',
+                ...styles.iconBtn,
+                backgroundColor: showSearch ? '#e8f7f7' : hoveredBtn === 'search' ? '#f1f1f1' : '#fff',
+                borderColor: showSearch ? '#2AABAB' : '#c9cccf',
               }}
-              onClick={() => setShowSort(!showSort)}
-              onMouseEnter={() => setHoveredBtn('sort')}
+              onClick={() => setShowSearch(!showSearch)}
+              onMouseEnter={() => setHoveredBtn('search')}
               onMouseLeave={() => setHoveredBtn(null)}
             >
-              <svg width="16" height="16" viewBox="0 0 20 20" fill="#5c5f62">
-                <path d="M3 3a1 1 0 000 2h11a1 1 0 100-2H3zm0 4a1 1 0 000 2h7a1 1 0 100-2H3zm0 4a1 1 0 100 2h4a1 1 0 100-2H3z"/>
-              </svg>
-              <span>{sortOptions.find(s => s.id === sortBy)?.label}</span>
-              <svg width="12" height="12" viewBox="0 0 20 20" fill="#5c5f62">
-                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd"/>
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="#5c5f62">
+                <path d="M8 12a4 4 0 110-8 4 4 0 010 8zm9.707 4.293l-4.82-4.82A5.968 5.968 0 0014 8 6 6 0 102 8a6 6 0 006 6 5.968 5.968 0 003.473-1.113l4.82 4.82a1 1 0 001.414-1.414z"/>
               </svg>
             </button>
-            {showSort && (
-              <div style={styles.sortDropdown}>
-                {sortOptions.map(option => (
-                  <div
-                    key={option.id}
-                    style={{
-                      ...styles.sortOption,
-                      backgroundColor: sortBy === option.id ? '#f6f6f7' : 'transparent',
-                    }}
-                    onClick={() => { setSortBy(option.id); setShowSort(false); }}
-                  >
-                    {option.label}
-                    {sortBy === option.id && (
-                      <svg width="16" height="16" viewBox="0 0 20 20" fill="#303030">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                      </svg>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+            <div style={styles.sortWrapper} ref={sortRef}>
+              <button
+                style={{
+                  ...styles.iconBtn,
+                  backgroundColor: showSort ? '#e8f7f7' : hoveredBtn === 'sort' ? '#f1f1f1' : '#fff',
+                  borderColor: showSort ? '#2AABAB' : '#c9cccf',
+                }}
+                onClick={() => setShowSort(!showSort)}
+                onMouseEnter={() => setHoveredBtn('sort')}
+                onMouseLeave={() => setHoveredBtn(null)}
+              >
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="#5c5f62">
+                  <path d="M17 8a1 1 0 01-.707-.293L13 4.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4A1 1 0 0117 8zM3 12a1 1 0 01.707.293L7 15.586l3.293-3.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4A1 1 0 013 12z"/>
+                </svg>
+              </button>
+              {showSort && (
+                <div style={styles.sortDropdown}>
+                  {sortOptions.map(option => (
+                    <div
+                      key={option.id}
+                      style={{
+                        ...styles.sortOption,
+                        backgroundColor: sortBy === option.id ? '#f6f6f7' : 'transparent',
+                      }}
+                      onClick={() => { setSortBy(option.id); setShowSort(false); }}
+                    >
+                      {sortBy === option.id && (
+                        <svg width="14" height="14" viewBox="0 0 20 20" fill="#2AABAB" style={{ marginRight: 8 }}>
+                          <path d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z"/>
+                        </svg>
+                      )}
+                      <span style={{ marginLeft: sortBy === option.id ? 0 : 22 }}>{option.label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Results count */}
-      <div style={styles.resultsRow}>
-        <span style={styles.resultsText}>
-          {filteredAdmins.length} {filteredAdmins.length === 1 ? 'администратор' : 'администраторов'}
-        </span>
-      </div>
+        {/* Search Panel */}
+        {showSearch && (
+          <div style={styles.searchPanel}>
+            <div style={styles.searchInputWrapper}>
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="#8c9196" style={styles.searchIcon}>
+                <path d="M8 12a4 4 0 110-8 4 4 0 010 8zm9.707 4.293l-4.82-4.82A5.968 5.968 0 0014 8 6 6 0 102 8a6 6 0 006 6 5.968 5.968 0 003.473-1.113l4.82 4.82a1 1 0 001.414-1.414z"/>
+              </svg>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Поиск по имени, телефону, логину..."
+                style={styles.searchInput}
+                autoFocus
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  style={styles.searchClear}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
-      {/* Table */}
-      <div style={styles.tableCard}>
+        {/* Table */}
+        <div style={styles.tableWrapper}>
         {filteredAdmins.length === 0 ? (
           <div style={styles.emptyState}>
             <svg width="48" height="48" viewBox="0 0 24 24" fill="#c9cccf">
@@ -351,7 +342,9 @@ function Admins() {
           <table style={styles.table}>
             <thead>
               <tr>
-                <th style={styles.th}>Администратор</th>
+                <th style={styles.th}>Имя</th>
+                <th style={styles.th}>Логин</th>
+                <th style={styles.th}>Пароль</th>
                 <th style={styles.th}>Телефон</th>
                 <th style={{...styles.th, textAlign: 'center'}}>Статус</th>
                 <th style={styles.th}>Дата создания</th>
@@ -364,79 +357,68 @@ function Admins() {
                   key={admin.id}
                   style={{
                     ...styles.tr,
-                    backgroundColor: hoveredRow === admin.id ? '#f6f6f7' : 'transparent',
+                    backgroundColor: hoveredRow === admin.id ? '#f0fafa' : 'transparent',
                   }}
                   onMouseEnter={() => setHoveredRow(admin.id)}
                   onMouseLeave={() => setHoveredRow(null)}
                 >
                   <td style={styles.td}>
-                    <div style={styles.adminCell}>
-                      <div style={styles.avatar}>
-                        {getInitials(admin.full_name)}
-                      </div>
-                      <div style={styles.adminInfo}>
-                        <span style={styles.adminName}>{admin.full_name || '—'}</span>
-                        <span style={styles.username}>@{admin.username}</span>
-                      </div>
+                    <span style={styles.adminName}>{admin.full_name || '—'}</span>
+                  </td>
+                  <td style={styles.td}>
+                    <span style={styles.textBlack}>{admin.username}</span>
+                  </td>
+                  <td style={styles.td}>
+                    <div style={styles.passwordCell}>
+                      <span style={styles.textBlack}>
+                        {visiblePasswords[admin.id] ? (admin.password || '—') : '••••••'}
+                      </span>
+                      <button
+                        style={styles.eyeBtn}
+                        onClick={() => togglePasswordVisibility(admin.id)}
+                        title={visiblePasswords[admin.id] ? 'Скрыть' : 'Показать'}
+                      >
+                        {visiblePasswords[admin.id] ? (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        ) : (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
+                            <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
+                            <line x1="1" y1="1" x2="23" y2="23"/>
+                          </svg>
+                        )}
+                      </button>
                     </div>
                   </td>
                   <td style={styles.td}>
-                    {admin.phone ? (
-                      <div style={styles.phoneCell}>
-                        <svg width="14" height="14" viewBox="0 0 20 20" fill="#8c9196">
-                          <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
-                        </svg>
-                        <span>{admin.phone}</span>
-                      </div>
-                    ) : (
-                      <span style={styles.noData}>—</span>
-                    )}
+                    <span style={styles.textBlack}>{admin.phone || '—'}</span>
                   </td>
                   <td style={{...styles.td, textAlign: 'center'}}>
-                    <span style={{
-                      ...styles.statusBadge,
-                      backgroundColor: admin.is_active ? '#e3f4e8' : '#fef2f2',
-                      color: admin.is_active ? '#2AABAB' : '#d72c0d',
-                    }}>
-                      <span style={{
-                        ...styles.statusDot,
-                        backgroundColor: admin.is_active ? '#2AABAB' : '#d72c0d',
-                      }}/>
+                    <span style={styles.statusBadge}>
                       {admin.is_active ? 'Активен' : 'Неактивен'}
                     </span>
                   </td>
                   <td style={styles.td}>
-                    <span style={styles.dateText}>{formatDate(admin.created_at)}</span>
+                    <span style={styles.textBlack}>{formatDate(admin.created_at)}</span>
                   </td>
                   <td style={{...styles.td, textAlign: 'center'}}>
                     <div style={styles.actionButtons}>
                       <button
-                        style={{
-                          ...styles.actionBtn,
-                          backgroundColor: hoveredBtn === `edit-${admin.id}` ? '#e8e8e8' : '#f6f6f7',
-                        }}
+                        style={styles.editBtn}
                         onClick={() => openEditModal(admin)}
-                        onMouseEnter={() => setHoveredBtn(`edit-${admin.id}`)}
-                        onMouseLeave={() => setHoveredBtn(null)}
                         title="Редактировать"
                       >
-                        <svg width="16" height="16" viewBox="0 0 20 20" fill="#5c5f62">
+                        <svg width="14" height="14" viewBox="0 0 20 20" fill="#fff">
                           <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
                         </svg>
                       </button>
                       <button
-                        style={{
-                          ...styles.actionBtn,
-                          backgroundColor: hoveredBtn === `delete-${admin.id}` ? '#fee2e2' : '#f6f6f7',
-                        }}
+                        style={styles.deleteBtn}
                         onClick={() => setShowDeleteConfirm(admin.id)}
-                        onMouseEnter={() => setHoveredBtn(`delete-${admin.id}`)}
-                        onMouseLeave={() => setHoveredBtn(null)}
-                        title="Удалить"
                       >
-                        <svg width="16" height="16" viewBox="0 0 20 20" fill="#d72c0d">
-                          <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd"/>
-                        </svg>
+                        Удалить
                       </button>
                     </div>
                   </td>
@@ -445,6 +427,7 @@ function Admins() {
             </tbody>
           </table>
         )}
+        </div>
       </div>
 
       {/* Add/Edit Admin Modal */}
@@ -459,12 +442,14 @@ function Admins() {
               <div style={styles.formGroup}>
                 <label style={styles.label}>Логин *</label>
                 <input
-                  style={{...styles.input, backgroundColor: editingAdmin ? '#f6f6f7' : '#fff'}}
+                  style={{...styles.input, opacity: editingAdmin ? 0.6 : 1}}
                   type="text"
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   placeholder="Логин для входа"
                   disabled={!!editingAdmin}
+                  autoComplete="off"
+                  name="admin-username-new"
                 />
               </div>
 
@@ -478,6 +463,8 @@ function Admins() {
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   placeholder={editingAdmin ? 'Новый пароль' : 'Пароль для входа'}
+                  autoComplete="new-password"
+                  name="admin-password-new"
                 />
               </div>
 
@@ -504,13 +491,30 @@ function Admins() {
               </div>
 
               <div style={styles.formGroup}>
-                <label style={styles.checkboxLabel}>
-                  <input
-                    type="checkbox"
-                    checked={formData.is_active}
-                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  />
-                  <span>Активен</span>
+                <label style={styles.label}>Должность</label>
+                <input
+                  style={styles.input}
+                  type="text"
+                  value={formData.position}
+                  onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                  placeholder="Менеджер, Директор, и т.д."
+                />
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.checkboxLabel} onClick={() => setFormData({ ...formData, is_active: !formData.is_active })}>
+                  <div style={{
+                    ...styles.customCheckbox,
+                    background: formData.is_active ? 'linear-gradient(to right, #2AABAB, #0a2535)' : '#fff',
+                    borderColor: formData.is_active ? 'transparent' : '#c9cccf',
+                  }}>
+                    {formData.is_active && (
+                      <svg width="12" height="12" viewBox="0 0 20 20" fill="#fff">
+                        <path d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z"/>
+                      </svg>
+                    )}
+                  </div>
+                  <span style={styles.checkboxText}>Активен</span>
                 </label>
               </div>
 
@@ -591,24 +595,26 @@ const styles = {
     marginBottom: '20px',
   },
   title: {
-    fontSize: '20px',
+    fontSize: '18px',
     fontWeight: '600',
-    color: '#303030',
     margin: 0,
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
   },
   addBtn: {
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
     padding: '8px 14px',
-    backgroundColor: '#303030',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
     color: '#fff',
     border: 'none',
     borderRadius: '8px',
     fontSize: '13px',
     fontWeight: '600',
     cursor: 'pointer',
-    boxShadow: '0 1px 0 rgba(0,0,0,0.05), inset 0 -1px 0 rgba(0,0,0,0.2)',
     transition: 'all 0.15s',
   },
 
@@ -630,221 +636,210 @@ const styles = {
     fontSize: '14px',
   },
 
+  // Card
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: '12px',
+    border: '1px solid #e1e3e5',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.05)',
+    overflow: 'hidden',
+  },
+
   // Tabs
   tabsRow: {
     display: 'flex',
-    gap: '0',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '0 12px',
     borderBottom: '1px solid #e1e3e5',
-    marginBottom: '16px',
     overflowX: 'auto',
+    position: 'relative',
+    zIndex: 10,
+    backgroundColor: '#fff',
+  },
+  tabsLeft: {
+    display: 'flex',
+    alignItems: 'center',
+  },
+  tabsRight: {
+    display: 'flex',
+    gap: '6px',
   },
   tab: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '12px 16px',
+    padding: '10px 12px',
+    backgroundColor: 'transparent',
     border: 'none',
     borderBottom: '2px solid transparent',
-    background: 'none',
     fontSize: '13px',
+    fontWeight: '500',
+    color: '#000',
     cursor: 'pointer',
-    transition: 'all 0.15s',
-    marginBottom: '-1px',
     whiteSpace: 'nowrap',
   },
-  tabCount: {
-    padding: '2px 8px',
-    borderRadius: '10px',
-    fontSize: '11px',
+  tabActive: {
+    padding: '10px 12px',
+    backgroundColor: 'transparent',
+    border: 'none',
+    borderBottom: '2px solid',
+    borderImage: 'linear-gradient(to right, #2AABAB, #0a2535) 1',
+    fontSize: '13px',
     fontWeight: '600',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
   },
-
-  // Filters Panel
-  filtersPanel: {
+  iconBtn: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    marginBottom: '12px',
-  },
-  searchBox: {
-    flex: 1,
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '8px 12px',
+    gap: '4px',
+    padding: '5px 10px',
     backgroundColor: '#fff',
     border: '1px solid #c9cccf',
-    borderRadius: '8px',
-    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
-  },
-  searchInput: {
-    flex: 1,
-    border: 'none',
-    background: 'none',
-    fontSize: '13px',
-    color: '#303030',
-    outline: 'none',
-  },
-  clearSearch: {
-    background: 'none',
-    border: 'none',
+    borderRadius: '6px',
     cursor: 'pointer',
-    padding: '2px',
-    display: 'flex',
-    alignItems: 'center',
+    transition: 'background-color 0.15s',
   },
-  filterActions: {
-    display: 'flex',
-    gap: '8px',
-  },
+
+  // Sort
   sortWrapper: {
     position: 'relative',
   },
-  sortBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '8px 12px',
-    backgroundColor: '#fff',
-    border: '1px solid #c9cccf',
-    borderRadius: '8px',
-    fontSize: '13px',
-    color: '#303030',
-    cursor: 'pointer',
-    boxShadow: '0 1px 0 rgba(0,0,0,0.05), inset 0 -1px 0 rgba(0,0,0,0.1)',
-    transition: 'all 0.15s',
-  },
   sortDropdown: {
     position: 'absolute',
-    top: 'calc(100% + 4px)',
+    top: '100%',
     right: 0,
+    marginTop: '4px',
+    minWidth: '180px',
     backgroundColor: '#fff',
     border: '1px solid #e1e3e5',
-    borderRadius: '10px',
+    borderRadius: '8px',
     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-    minWidth: '180px',
     zIndex: 100,
     overflow: 'hidden',
   },
   sortOption: {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '10px 14px',
+    padding: '8px 12px',
     fontSize: '13px',
     color: '#303030',
     cursor: 'pointer',
-    transition: 'background-color 0.1s',
+    transition: 'background-color 0.15s',
   },
 
-  // Results
-  resultsRow: {
-    marginBottom: '12px',
+  // Search Panel
+  searchPanel: {
+    padding: '12px 16px',
+    backgroundColor: '#f6f6f7',
+    borderBottom: '1px solid #e1e3e5',
   },
-  resultsText: {
+  searchInputWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: '12px',
+    pointerEvents: 'none',
+  },
+  searchInput: {
+    width: '100%',
+    padding: '8px 36px 8px 36px',
     fontSize: '13px',
-    color: '#6d7175',
+    color: '#202223',
+    backgroundColor: '#fff',
+    border: '1px solid #c9cccf',
+    borderRadius: '8px',
+    outline: 'none',
+    boxSizing: 'border-box',
+  },
+  searchClear: {
+    position: 'absolute',
+    right: '10px',
+    width: '20px',
+    height: '20px',
+    border: 'none',
+    backgroundColor: '#8c9196',
+    color: '#fff',
+    borderRadius: '50%',
+    fontSize: '14px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   // Table
-  tableCard: {
-    backgroundColor: '#fff',
-    borderRadius: '12px',
-    border: '1px solid #e1e3e5',
-    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-    overflow: 'hidden',
+  tableWrapper: {
+    overflowX: 'auto',
+    position: 'relative',
+    zIndex: 1,
   },
   table: {
     width: '100%',
     borderCollapse: 'collapse',
   },
   th: {
-    padding: '12px 16px',
+    padding: '8px 12px',
     textAlign: 'left',
     fontSize: '12px',
-    fontWeight: '600',
-    color: '#6d7175',
+    fontWeight: '500',
+    color: '#000',
     backgroundColor: '#f6f6f7',
     borderBottom: '1px solid #e1e3e5',
-    textTransform: 'uppercase',
-    letterSpacing: '0.3px',
   },
   tr: {
     transition: 'background-color 0.1s',
     borderBottom: '1px solid #f1f1f1',
   },
   td: {
-    padding: '14px 16px',
+    padding: '10px 12px',
     fontSize: '13px',
     color: '#303030',
     verticalAlign: 'middle',
   },
 
   // Admin Cell
-  adminCell: {
+  adminName: {
+    fontSize: '13px',
+    fontWeight: '600',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+  },
+  textBlack: {
+    fontSize: '13px',
+    color: '#303030',
+  },
+  passwordCell: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
+    gap: '10px',
   },
-  avatar: {
-    width: '40px',
-    height: '40px',
-    borderRadius: '10px',
-    backgroundColor: '#303030',
+  eyeBtn: {
+    background: 'none',
+    border: 'none',
+    padding: '2px',
+    cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '13px',
-    fontWeight: '600',
-    color: '#fff',
-    flexShrink: 0,
-  },
-  adminInfo: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-  },
-  adminName: {
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#303030',
-  },
-  username: {
-    fontSize: '12px',
-    color: '#8c9196',
-    fontFamily: 'monospace',
-  },
-
-  // Phone Cell
-  phoneCell: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    fontSize: '13px',
-    color: '#303030',
   },
 
   // Badges
   statusBadge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '4px 10px',
-    borderRadius: '6px',
+    display: 'inline-block',
+    padding: '2px 8px',
+    borderRadius: '10px',
     fontSize: '12px',
     fontWeight: '500',
-  },
-  statusDot: {
-    width: '6px',
-    height: '6px',
-    borderRadius: '50%',
-  },
-  dateText: {
-    fontSize: '12px',
-    color: '#6d7175',
-  },
-  noData: {
-    color: '#c9cccf',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    color: '#fff',
   },
 
   // Action buttons
@@ -852,17 +847,27 @@ const styles = {
     display: 'flex',
     justifyContent: 'center',
     gap: '8px',
+    alignItems: 'center',
   },
-  actionBtn: {
-    width: '32px',
-    height: '32px',
-    borderRadius: '8px',
+  editBtn: {
+    width: '28px',
+    height: '28px',
+    borderRadius: '6px',
     border: 'none',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
-    transition: 'all 0.15s',
+  },
+  deleteBtn: {
+    background: 'none',
+    border: 'none',
+    fontSize: '11px',
+    fontWeight: '600',
+    color: '#d72c0d',
+    cursor: 'pointer',
+    padding: '4px 8px',
   },
 
   // Empty State
@@ -906,8 +911,11 @@ const styles = {
   modalTitle: {
     fontSize: '20px',
     fontWeight: '700',
-    color: '#1E293B',
     margin: '0 0 20px 0',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
   },
   formGroup: {
     marginBottom: '16px',
@@ -915,25 +923,52 @@ const styles = {
   label: {
     display: 'block',
     fontSize: '14px',
-    fontWeight: '500',
-    color: '#374151',
+    fontWeight: '600',
     marginBottom: '6px',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+    width: 'fit-content',
   },
   input: {
     width: '100%',
     padding: '12px',
-    border: '1px solid #E2E8F0',
+    border: '1px solid #c9cccf',
     borderRadius: '10px',
     fontSize: '14px',
     boxSizing: 'border-box',
+    backgroundColor: '#fff',
+    background: '#fff',
+    color: '#303030',
+    outline: 'none',
+    WebkitAppearance: 'none',
+    MozAppearance: 'none',
+    appearance: 'none',
   },
   checkboxLabel: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: '10px',
     fontSize: '14px',
-    color: '#374151',
     cursor: 'pointer',
+  },
+  customCheckbox: {
+    width: '20px',
+    height: '20px',
+    borderRadius: '4px',
+    border: '2px solid #c9cccf',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.15s',
+  },
+  checkboxText: {
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+    fontWeight: '500',
   },
   modalActions: {
     display: 'flex',
@@ -943,17 +978,17 @@ const styles = {
   },
   cancelButton: {
     padding: '12px 24px',
-    backgroundColor: '#F1F5F9',
-    color: '#64748B',
-    border: 'none',
+    border: '2px solid transparent',
     borderRadius: '10px',
     fontSize: '14px',
     fontWeight: '600',
     cursor: 'pointer',
+    background: 'linear-gradient(#fff, #fff) padding-box, linear-gradient(to right, #2AABAB, #0a2535) border-box',
+    color: '#2AABAB',
   },
   submitButton: {
     padding: '12px 24px',
-    backgroundColor: '#303030',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
     color: 'white',
     border: 'none',
     borderRadius: '10px',

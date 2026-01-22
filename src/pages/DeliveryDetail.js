@@ -288,7 +288,7 @@ function DeliveryDetail() {
       {/* Header */}
       <div style={styles.header}>
         <div style={styles.headerLeft}>
-          <button style={styles.backBtn} onClick={() => navigate('/deliveries')}>
+          <button style={styles.backBtn} onClick={() => navigate(-1)}>
             <svg width="16" height="16" viewBox="0 0 20 20" style={{ display: 'block', flexShrink: 0, marginTop: '2px' }}>
               <defs>
                 <linearGradient id="backIconGradient" x1="0%" y1="0%" x2="100%" y2="0%">

@@ -113,19 +113,20 @@ function Layout({ children, setIsAuthenticated }) {
         <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
       </svg>
     ),
+    kurs: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill={c}>
+        <path d="M12.89 11.1c-1.78-.59-2.64-.96-2.64-1.9 0-1.02 1.11-1.39 1.81-1.39 1.31 0 1.79.99 1.9 1.34l1.58-.67c-.15-.45-.82-1.92-2.54-2.24V5h-2v1.26c-2.48.56-2.49 2.86-2.49 2.96 0 2.27 2.25 2.91 3.35 3.31 1.58.56 2.28 1.07 2.28 2.03 0 1.13-1.05 1.61-1.98 1.61-1.82 0-2.34-1.87-2.4-2.09l-1.66.67c.63 2.19 2.28 2.78 2.9 2.96V19h2v-1.24c.4-.09 2.9-.59 2.9-3.22 0-1.39-.61-2.61-3.01-3.44zM3 21H1v-6h6v2H4.52c1.61 2.41 4.36 4 7.48 4 4.97 0 9-4.03 9-9h2c0 6.08-4.92 11-11 11-3.72 0-7.01-1.85-9-4.67V21zm-2-9C1 5.92 5.92 1 12 1c3.72 0 7.01 1.85 9 4.67V3h2v6h-6V7h2.48C17.87 4.59 15.12 3 12 3c-4.97 0-9 4.03-9 9H1z"/>
+      </svg>
+    ),
   };
 
   const items = [
     { id: 'home', path: '/', label: 'Главная', icon: 'home' },
     { id: 'deliveries', path: '/deliveries', label: 'Доставки', icon: 'deliveries' },
+    { id: 'kurs', path: '/kurs', label: 'Курс', icon: 'kurs' },
     { id: 'customers', path: '/clients', label: 'Клиенты', icon: 'customers' },
     ...(isMainAdmin ? [{ id: 'admins', path: '/admins', label: 'Администраторы', icon: 'admins' }] : []),
     { id: 'support', path: '/support', label: 'Поддержка', icon: 'support' },
-    { id: 'marketing', path: '/marketing', label: 'Маркетинг', icon: 'marketing' },
-    { id: 'discounts', path: '/discounts', label: 'Скидки', icon: 'discounts' },
-    { id: 'content', path: '/content', label: 'Контент', icon: 'content' },
-    { id: 'markets', path: '/markets', label: 'Рынки', icon: 'markets' },
-    { id: 'analytics', path: '/statistics', label: 'Аналитика', icon: 'analytics' },
   ];
 
   const getSubIcon = (icon, active) => {
@@ -272,28 +273,7 @@ function Layout({ children, setIsAuthenticated }) {
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
-          }}>RENEXPRESS</span>
-        </div>
-        <div className="header-search-box" style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '8px 12px', width: 480, cursor: 'text' }}>
-          <svg width="16" height="16" viewBox="0 0 20 20">
-            <circle cx="9" cy="9" r="6" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="1.5"/>
-            <path d="M13.5 13.5l4 4" stroke="rgba(255,255,255,0.9)" strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
-          <input
-            type="text"
-            placeholder="Поиск"
-            className="header-search-input"
-            style={{
-              flex: 1,
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              color: '#fff',
-              fontSize: 14,
-            }}
-          />
-          <span style={{ background: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.9)', fontSize: 11, padding: '2px 6px', borderRadius: 4 }}>⌘</span>
-          <span style={{ background: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.9)', fontSize: 11, padding: '2px 6px', borderRadius: 4 }}>K</span>
+          }}>RENCARGO CRM</span>
         </div>
         <div style={{ position: 'relative' }}>
           <div
@@ -407,10 +387,6 @@ function Layout({ children, setIsAuthenticated }) {
                 </div>
               );
             })}
-            <SectionLabel label="Каналы продаж" />
-            <NavItem id="store" path="/store" label="Интернет-магазин" icon="store" active={isActive('/store')} />
-            <SectionLabel label="Приложения" />
-            <NavItem id="add" path="/add" label="Добавить" icon="add" active={false} />
           </div>
           <NavItem id="settings" path="/settings" label="Настройки" icon="settings" active={isActive('/settings')} />
         </div>

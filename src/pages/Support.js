@@ -27,9 +27,32 @@ function Support() {
   // eslint-disable-next-line no-unused-vars
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [viewingImage, setViewingImage] = useState(null);
+  const [chatAdmins, setChatAdmins] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const prevMessageCountRef = useRef(0);
   const [stats, setStats] = useState({ total: 0, open: 0, pending: 0, unread: 0 });
+
+  // Load current user from localStorage
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    setCurrentUser(user);
+  }, []);
+
+  // Scroll to bottom helper
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => {
+      const container = document.getElementById('messages-container');
+      if (container) {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: 'smooth'
+        });
+      }
+    }, 200);
+  }, []);
 
   useEffect(() => {
     loadChats();
@@ -37,7 +60,7 @@ function Support() {
     return () => clearInterval(pollInterval);
   }, []);
 
-  
+
   useEffect(() => {
     if (!selectedChat) return;
     const msgPollInterval = setInterval(() => {
@@ -45,6 +68,18 @@ function Support() {
     }, 5000);
     return () => clearInterval(msgPollInterval);
   }, [selectedChat]);
+
+  // Scroll to bottom and mark as read when new messages arrive
+  useEffect(() => {
+    if (messages.length > prevMessageCountRef.current && selectedChat) {
+      scrollToBottom();
+      // Mark messages as read if we're viewing this chat
+      axios.post(`${API_URL}/support/${selectedChat.client_id}/read/`).then(() => {
+        loadChats(); // Refresh chat list to update unread count
+      }).catch(() => {});
+    }
+    prevMessageCountRef.current = messages.length;
+  }, [messages, selectedChat, scrollToBottom]);
 
   useEffect(() => {
     let filtered = [...chats];
@@ -73,12 +108,14 @@ function Support() {
     });
   }, [chats, searchQuery, statusFilter]);
 
-  // eslint-disable-next-line no-unused-vars
-  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-
   const loadChats = async () => {
     try {
-      const response = await axios.get(`${API_URL}/support/chats/`);
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const params = new URLSearchParams();
+      if (user.id) params.append('admin_id', user.id);
+      if (user.is_main_admin) params.append('is_main_admin', 'true');
+
+      const response = await axios.get(`${API_URL}/support/chats/?${params.toString()}`);
       if (response.data.success) setChats(response.data.chats);
     } catch (error) {
       console.error('Error loading chats:', error);
@@ -96,14 +133,47 @@ function Support() {
     }
   };
 
+  const loadChatAdmins = async (clientId) => {
+    try {
+      const response = await axios.get(`${API_URL}/support/${clientId}/admins/`);
+      if (response.data.success) setChatAdmins(response.data.admins);
+    } catch (error) {
+      console.error('Error loading chat admins:', error);
+    }
+  };
+
+  const handleAdminToggle = async (adminId, isAssigned) => {
+    // Only main admin can change assignments
+    if (!currentUser?.is_main_admin) return;
+
+    const newAdmins = chatAdmins.map(admin =>
+      admin.id === adminId ? { ...admin, is_assigned: !isAssigned } : admin
+    );
+    setChatAdmins(newAdmins);
+
+    try {
+      const assignedIds = newAdmins.filter(a => a.is_assigned).map(a => a.id);
+      await axios.post(`${API_URL}/support/${selectedChat.client_id}/admins/update/`, {
+        admin_ids: assignedIds
+      });
+    } catch (error) {
+      console.error('Error updating chat admins:', error);
+      // Revert on error
+      loadChatAdmins(selectedChat.client_id);
+    }
+  };
+
   const selectChat = async (chat) => {
     setSelectedChat(chat);
+    prevMessageCountRef.current = 0; // Reset so scroll triggers for new chat
     const response = await axios.get(`${API_URL}/support/${chat.client_id}/messages/`);
     if (response.data.success) {
       setMessages(response.data.messages);
       // Instantly be at bottom when opening a new chat
-      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'instant' }), 50);
+      scrollToBottom();
     }
+    // Load admins for this chat
+    loadChatAdmins(chat.client_id);
     try {
       await axios.post(`${API_URL}/support/${chat.client_id}/read/`);
       loadChats();
@@ -127,15 +197,17 @@ function Support() {
       // Get current admin name from localStorage
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       const adminName = user.full_name || user.username || 'Администратор';
+      const adminNameWithPosition = user.position ? `${adminName} (${user.position})` : adminName;
 
       if (selectedFile) await uploadFile();
       if (newMessage.trim()) {
         await axios.post(`${API_URL}/support/${selectedChat.client_id}/send/`, {
           message: newMessage,
           is_from_client: false,
-          admin_name: adminName
+          admin_name: adminNameWithPosition
         });
-        loadMessages(selectedChat.client_id);
+        await loadMessages(selectedChat.client_id);
+        scrollToBottom();
       }
       setNewMessage('');
       setSelectedFile(null);
@@ -170,15 +242,17 @@ function Support() {
         // Get current admin name from localStorage
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         const adminName = user.full_name || user.username || 'Администратор';
+        const adminNameWithPosition = user.position ? `${adminName} (${user.position})` : adminName;
 
         // Send message with image URL
         await axios.post(`${API_URL}/support/${selectedChat.client_id}/send/`, {
           message: '',
           image_url: uploadResponse.data.url,
           is_from_client: false,
-          admin_name: adminName
+          admin_name: adminNameWithPosition
         });
-        loadMessages(selectedChat.client_id);
+        await loadMessages(selectedChat.client_id);
+        scrollToBottom();
       } else {
         console.error('Upload failed:', uploadResponse.data);
         alert('Ошибка загрузки: ' + (uploadResponse.data.error || 'Неизвестная ошибка'));
@@ -281,32 +355,7 @@ function Support() {
     <div style={styles.page}>
       {/* Header */}
       <div style={styles.header}>
-        <div style={styles.titleRow}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="#303030">
-            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
-          </svg>
-          <h1 style={styles.title}>Поддержка</h1>
-        </div>
-        <div style={styles.statsRow}>
-          <div style={styles.statItem}>
-            <span style={styles.statValue}>{stats.total}</span>
-            <span style={styles.statLabel}>Всего</span>
-          </div>
-          <div style={styles.statItem}>
-            <span style={{ ...styles.statValue, color: '#065f46' }}>{stats.open}</span>
-            <span style={styles.statLabel}>Открытых</span>
-          </div>
-          <div style={styles.statItem}>
-            <span style={{ ...styles.statValue, color: '#92400e' }}>{stats.pending}</span>
-            <span style={styles.statLabel}>В ожидании</span>
-          </div>
-          {stats.unread > 0 && (
-            <div style={styles.statItem}>
-              <span style={{ ...styles.statValue, color: '#dc2626' }}>{stats.unread}</span>
-              <span style={styles.statLabel}>Непрочитанных</span>
-            </div>
-          )}
-        </div>
+        <h1 style={styles.title}>Поддержка</h1>
       </div>
 
       <div style={styles.content}>
@@ -327,27 +376,6 @@ function Support() {
             {searchQuery && (
               <button style={styles.clearBtn} onClick={() => setSearchQuery('')}>×</button>
             )}
-          </div>
-
-          <div style={styles.filterTabs}>
-            {[
-              { key: 'all', label: 'Все' },
-              { key: 'unread', label: 'Новые', count: stats.unread },
-              { key: 'open', label: 'Открытые' },
-              { key: 'pending', label: 'Ожидание' },
-            ].map(filter => (
-              <button
-                key={filter.key}
-                style={{
-                  ...styles.filterTab,
-                  ...(statusFilter === filter.key ? styles.filterTabActive : {}),
-                }}
-                onClick={() => setStatusFilter(filter.key)}
-              >
-                {filter.label}
-                {filter.count > 0 && <span style={styles.filterBadge}>{filter.count}</span>}
-              </button>
-            ))}
           </div>
 
           <div style={styles.chatList}>
@@ -402,37 +430,27 @@ function Support() {
                     <div style={styles.chatHeaderName}>{selectedChat.client_name || selectedChat.client_username}</div>
                     <div style={styles.chatHeaderMeta}>
                       <span>{selectedChat.client_username}</span>
-                      <span style={{
-                        ...styles.statusBadge,
-                        backgroundColor: CHAT_STATUS_CONFIG[selectedChat.status]?.bg || '#d1fae5',
-                        color: CHAT_STATUS_CONFIG[selectedChat.status]?.color || '#065f46',
-                      }}>
-                        {CHAT_STATUS_CONFIG[selectedChat.status]?.label || 'Открыт'}
-                      </span>
                     </div>
                   </div>
                 </div>
-                <div style={styles.chatHeaderActions}>
-                  <button style={styles.actionBtn} onClick={() => setShowStatusModal(true)} title="Статус">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M12 6v6l4 2" />
+                <button
+                  style={styles.burgerBtn}
+                  onClick={() => setShowInfoPanel(!showInfoPanel)}
+                  title={showInfoPanel ? 'Закрыть' : 'Меню'}
+                >
+                  {showInfoPanel ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#303030" strokeWidth="1.5">
+                      <path d="M18 6L6 18M6 6l12 12" />
                     </svg>
-                  </button>
-                  <button
-                    style={{ ...styles.actionBtn, ...(showInfoPanel ? styles.actionBtnActive : {}) }}
-                    onClick={() => setShowInfoPanel(!showInfoPanel)}
-                    title="Информация"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M12 16v-4M12 8h.01" />
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#303030" strokeWidth="1.5">
+                      <path d="M3 12h18M3 6h18M3 18h18" />
                     </svg>
-                  </button>
-                </div>
+                  )}
+                </button>
               </div>
 
-              <div style={styles.messagesArea}>
+              <div id="messages-container" style={styles.messagesArea} ref={messagesContainerRef}>
                 {groupedMessages.map((item, index) => {
                   if (item.type === 'date') {
                     return (
@@ -445,9 +463,6 @@ function Support() {
                   const isClient = msg.is_from_client;
                   return (
                     <div key={msg.id || index} style={{ ...styles.messageRow, justifyContent: isClient ? 'flex-start' : 'flex-end' }}>
-                      {isClient && (
-                        <div style={styles.msgAvatar}>{selectedChat.client_name?.charAt(0).toUpperCase() || 'К'}</div>
-                      )}
                       <div style={{ ...styles.msgWrapper, alignItems: isClient ? 'flex-start' : 'flex-end' }}>
                         {!isClient && msg.admin_name && (
                           <div style={styles.adminNameLabel}>{msg.admin_name}</div>
@@ -457,7 +472,7 @@ function Support() {
                         )}
                         {msg.message && (
                           <div style={{ ...styles.msgBubble, ...(isClient ? styles.msgBubbleClient : styles.msgBubbleAdmin) }}>
-                            <p style={{ ...styles.msgText, color: isClient ? '#303030' : '#fff' }}>{msg.message}</p>
+                            <p style={{ ...styles.msgText, ...(isClient ? styles.msgTextClient : {}) }}>{msg.message}</p>
                           </div>
                         )}
                         <span style={styles.msgTimeOutside}>{formatTime(msg.created_at)}</span>
@@ -477,7 +492,7 @@ function Support() {
                 )}
                 <div style={styles.inputRow}>
                   <button style={styles.attachBtn} onClick={() => fileInputRef.current?.click()}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6d7175" strokeWidth="2">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5">
                       <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
                     </svg>
                   </button>
@@ -496,9 +511,8 @@ function Support() {
                     onClick={sendMessage}
                     disabled={(!newMessage.trim() && !selectedFile) || sending}
                   >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-                      <line x1="22" y1="2" x2="11" y2="13" />
-                      <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 19V5M5 12l7-7 7 7" />
                     </svg>
                   </button>
                 </div>
@@ -523,45 +537,40 @@ function Support() {
         {/* Info Panel */}
         {selectedChat && showInfoPanel && (
           <div style={styles.infoPanel}>
-            <div style={styles.infoPanelHeader}>
-              <span style={styles.infoPanelTitle}>Информация</span>
-              <button style={styles.infoPanelClose} onClick={() => setShowInfoPanel(false)}>×</button>
-            </div>
-            <div style={styles.infoSection}>
-              <div style={styles.infoClient}>
-                <div style={styles.infoAvatar}>{selectedChat.client_name?.charAt(0).toUpperCase() || 'К'}</div>
-                <div>
-                  <p style={styles.infoName}>{selectedChat.client_name || 'Клиент'}</p>
-                  <p style={styles.infoUsername}>{selectedChat.client_username}</p>
-                </div>
+            <div style={{...styles.infoSection, borderBottom: 'none'}}>
+              <span style={styles.infoSectionTitleGradient}>Доступ к чату</span>
+              <div style={styles.adminList}>
+                {chatAdmins.map(admin => (
+                  <label
+                    key={admin.id}
+                    style={{
+                      ...styles.adminItem,
+                      opacity: currentUser?.is_main_admin ? 1 : 0.7,
+                      cursor: currentUser?.is_main_admin ? 'pointer' : 'default'
+                    }}
+                  >
+                    <div
+                      style={{
+                        ...styles.customCheckbox,
+                        ...(admin.is_assigned ? styles.customCheckboxChecked : {})
+                      }}
+                      onClick={() => currentUser?.is_main_admin && handleAdminToggle(admin.id, admin.is_assigned)}
+                    >
+                      {admin.is_assigned && (
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </div>
+                    <div style={styles.adminInfo}>
+                      <span style={styles.adminName}>{admin.full_name}</span>
+                      {admin.position && <span style={styles.adminPosition}>{admin.position}</span>}
+                    </div>
+                  </label>
+                ))}
               </div>
-            </div>
-            <div style={styles.infoSection}>
-              <div style={styles.infoRow}>
-                <span style={styles.infoLabel}>Статус</span>
-                <span style={{
-                  ...styles.statusBadge,
-                  backgroundColor: CHAT_STATUS_CONFIG[selectedChat.status]?.bg || '#d1fae5',
-                  color: CHAT_STATUS_CONFIG[selectedChat.status]?.color || '#065f46',
-                }}>
-                  {CHAT_STATUS_CONFIG[selectedChat.status]?.label || 'Открыт'}
-                </span>
-              </div>
-              <div style={styles.infoRow}>
-                <span style={styles.infoLabel}>Создан</span>
-                <span style={styles.infoValue}>{formatFullDate(selectedChat.created_at) || '—'}</span>
-              </div>
-              <div style={styles.infoRow}>
-                <span style={styles.infoLabel}>Активность</span>
-                <span style={styles.infoValue}>{formatFullDate(selectedChat.last_message_time) || '—'}</span>
-              </div>
-            </div>
-            <div style={styles.infoSection}>
-              <button style={styles.infoPanelBtn} onClick={() => setShowStatusModal(true)}>Изменить статус</button>
-              {selectedChat.status !== 'closed' ? (
-                <button style={{ ...styles.infoPanelBtn, ...styles.infoPanelBtnDanger }} onClick={() => setShowCloseModal(true)}>Закрыть чат</button>
-              ) : (
-                <button style={{ ...styles.infoPanelBtn, ...styles.infoPanelBtnSuccess }} onClick={reopenChat}>Открыть чат</button>
+              {!currentUser?.is_main_admin && (
+                <span style={styles.adminHint}>Только главный администратор может изменять доступ</span>
               )}
             </div>
           </div>
@@ -627,8 +636,8 @@ function Support() {
 
 const styles = {
   page: {
-    padding: '16px 20px',
-    height: 'calc(100vh - 32px)',
+    padding: '12px 20px',
+    height: 'calc(100vh - 100px)',
     display: 'flex',
     flexDirection: 'column',
   },
@@ -650,7 +659,7 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '16px',
+    marginBottom: '10px',
   },
   titleRow: {
     display: 'flex',
@@ -660,8 +669,11 @@ const styles = {
   title: {
     fontSize: '18px',
     fontWeight: '600',
-    color: '#303030',
     margin: 0,
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
   },
   statsRow: {
     display: 'flex',
@@ -689,9 +701,9 @@ const styles = {
     overflow: 'hidden',
   },
   sidebar: {
-    width: '300px',
+    width: '260px',
     backgroundColor: '#fff',
-    borderRadius: '12px',
+    borderRadius: '10px',
     border: '1px solid #e1e3e5',
     display: 'flex',
     flexDirection: 'column',
@@ -701,7 +713,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    padding: '12px',
+    padding: '8px 10px',
     borderBottom: '1px solid #e1e3e5',
   },
   searchInput: {
@@ -768,8 +780,8 @@ const styles = {
   chatItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
-    padding: '12px',
+    gap: '8px',
+    padding: '8px 10px',
     cursor: 'pointer',
     borderBottom: '1px solid #f3f4f6',
     transition: 'background-color 0.15s',
@@ -779,15 +791,15 @@ const styles = {
     borderLeft: '3px solid #303030',
   },
   chatAvatar: {
-    width: '40px',
-    height: '40px',
-    borderRadius: '10px',
-    backgroundColor: '#303030',
+    width: '32px',
+    height: '32px',
+    borderRadius: '8px',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
     color: '#fff',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '14px',
+    fontSize: '12px',
     fontWeight: '600',
     flexShrink: 0,
   },
@@ -804,14 +816,17 @@ const styles = {
   chatName: {
     fontSize: '13px',
     fontWeight: '600',
-    color: '#303030',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
   chatTime: {
     fontSize: '11px',
-    color: '#8c9196',
+    color: '#303030',
   },
   chatBottom: {
     display: 'flex',
@@ -820,7 +835,7 @@ const styles = {
   },
   chatPreview: {
     fontSize: '12px',
-    color: '#6d7175',
+    color: '#303030',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
@@ -837,48 +852,66 @@ const styles = {
   },
   chatArea: {
     flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: '12px',
+    minHeight: 0,
+    backgroundColor: '#f8f9fa',
+    borderRadius: '10px',
     border: '1px solid #e1e3e5',
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
+    position: 'relative',
   },
   chatHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '12px 16px',
+    padding: '8px 12px',
     borderBottom: '1px solid #e1e3e5',
   },
   chatHeaderLeft: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
+    gap: '10px',
   },
   chatHeaderAvatar: {
-    width: '36px',
-    height: '36px',
-    borderRadius: '8px',
-    backgroundColor: '#303030',
+    width: '30px',
+    height: '30px',
+    borderRadius: '6px',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
     color: '#fff',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '14px',
+    fontSize: '12px',
     fontWeight: '600',
   },
   chatHeaderName: {
-    fontSize: '14px',
+    fontSize: '13px',
     fontWeight: '600',
-    color: '#303030',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
   },
   chatHeaderMeta: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
     fontSize: '12px',
+    color: '#303030',
+  },
+  burgerBtn: {
+    width: '32px',
+    height: '32px',
+    border: 'none',
+    backgroundColor: 'transparent',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     color: '#6d7175',
+    transition: 'background-color 0.15s',
   },
   statusBadge: {
     padding: '2px 8px',
@@ -909,14 +942,16 @@ const styles = {
   },
   messagesArea: {
     flex: 1,
-    padding: '16px',
+    minHeight: 0,
+    padding: '12px',
+    paddingBottom: '70px',
     overflowY: 'auto',
     backgroundColor: '#f8f9fa',
   },
   dateDivider: {
     display: 'flex',
     justifyContent: 'center',
-    margin: '16px 0',
+    margin: '10px 0',
   },
   dateDividerText: {
     backgroundColor: '#e1e3e5',
@@ -928,19 +963,19 @@ const styles = {
   messageRow: {
     display: 'flex',
     alignItems: 'flex-end',
-    gap: '8px',
-    marginBottom: '10px',
+    gap: '6px',
+    marginBottom: '8px',
   },
   msgAvatar: {
-    width: '28px',
-    height: '28px',
+    width: '24px',
+    height: '24px',
     borderRadius: '6px',
     backgroundColor: '#303030',
     color: '#fff',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '11px',
+    fontSize: '10px',
     fontWeight: '600',
   },
   msgWrapper: {
@@ -957,8 +992,8 @@ const styles = {
     paddingRight: '4px',
   },
   msgBubble: {
-    padding: '10px 14px',
-    borderRadius: '12px',
+    padding: '8px 12px',
+    borderRadius: '10px',
   },
   msgBubbleClient: {
     backgroundColor: '#fff',
@@ -966,8 +1001,14 @@ const styles = {
     borderBottomLeftRadius: '4px',
   },
   msgBubbleAdmin: {
-    backgroundColor: '#303030',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
     borderBottomRightRadius: '4px',
+  },
+  msgTextClient: {
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
   },
   msgImage: {
     maxWidth: '100%',
@@ -985,6 +1026,7 @@ const styles = {
     lineHeight: '1.4',
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-word',
+    color: '#fff',
   },
   msgTime: {
     fontSize: '10px',
@@ -998,8 +1040,12 @@ const styles = {
     marginTop: '4px',
   },
   inputArea: {
-    padding: '12px 16px',
-    borderTop: '1px solid #e1e3e5',
+    position: 'absolute',
+    bottom: '0',
+    left: '0',
+    right: '0',
+    padding: '8px 12px',
+    backgroundColor: 'transparent',
   },
   filePreview: {
     display: 'flex',
@@ -1029,11 +1075,11 @@ const styles = {
     gap: '8px',
   },
   attachBtn: {
-    width: '40px',
-    height: '40px',
-    border: '1px solid #e1e3e5',
-    backgroundColor: '#fff',
-    borderRadius: '10px',
+    width: '34px',
+    height: '34px',
+    border: 'none',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    borderRadius: '8px',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
@@ -1041,21 +1087,22 @@ const styles = {
   },
   textarea: {
     flex: 1,
-    padding: '10px 14px',
-    border: '1px solid #e1e3e5',
-    borderRadius: '10px',
+    padding: '8px 16px',
+    border: 'none',
+    borderRadius: '24px',
     fontSize: '13px',
     outline: 'none',
     resize: 'none',
     fontFamily: 'inherit',
-    maxHeight: '100px',
+    maxHeight: '80px',
+    background: 'linear-gradient(to right, rgba(42, 171, 171, 0.3), rgba(10, 37, 53, 0.3))',
   },
   sendBtn: {
-    width: '40px',
-    height: '40px',
+    width: '34px',
+    height: '34px',
     border: 'none',
-    backgroundColor: '#303030',
-    borderRadius: '10px',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    borderRadius: '8px',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
@@ -1097,9 +1144,9 @@ const styles = {
     color: '#6d7175',
   },
   infoPanel: {
-    width: '280px',
+    width: '240px',
     backgroundColor: '#fff',
-    borderRadius: '12px',
+    borderRadius: '10px',
     border: '1px solid #e1e3e5',
     display: 'flex',
     flexDirection: 'column',
@@ -1109,7 +1156,7 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '12px 16px',
+    padding: '10px 12px',
     borderBottom: '1px solid #e1e3e5',
   },
   infoPanelTitle: {
@@ -1128,8 +1175,82 @@ const styles = {
     color: '#6d7175',
   },
   infoSection: {
-    padding: '16px',
+    padding: '12px',
     borderBottom: '1px solid #e1e3e5',
+  },
+  infoSectionTitle: {
+    fontSize: '12px',
+    fontWeight: '600',
+    color: '#6d7175',
+    textTransform: 'uppercase',
+    marginBottom: '12px',
+    display: 'block',
+  },
+  infoSectionTitleGradient: {
+    fontSize: '12px',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    marginBottom: '12px',
+    display: 'block',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+  },
+  customCheckbox: {
+    width: '18px',
+    height: '18px',
+    borderRadius: '4px',
+    border: '2px solid #d1d5db',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+  },
+  customCheckboxChecked: {
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    border: 'none',
+  },
+  adminList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  adminItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '8px',
+    borderRadius: '8px',
+    backgroundColor: '#f8f9fa',
+  },
+  adminCheckbox: {
+    width: '18px',
+    height: '18px',
+    cursor: 'inherit',
+  },
+  adminInfo: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+  },
+  adminName: {
+    fontSize: '13px',
+    fontWeight: '500',
+    color: '#303030',
+  },
+  adminPosition: {
+    fontSize: '11px',
+    color: '#6d7175',
+  },
+  adminHint: {
+    fontSize: '11px',
+    color: '#8c9196',
+    fontStyle: 'italic',
+    marginTop: '8px',
+    display: 'block',
   },
   infoClient: {
     display: 'flex',

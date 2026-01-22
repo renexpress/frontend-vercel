@@ -28,6 +28,7 @@ import Markets from './pages/Markets';
 import Deliveries from './pages/Deliveries';
 import DeliveryDetail from './pages/DeliveryDetail';
 import Admins from './pages/Admins';
+import Kurs from './pages/Kurs';
 import Layout from './components/Layout';
 import './App.css';
 
@@ -44,11 +45,17 @@ function ProtectedRoute({ children, isAuthenticated, setIsAuthenticated }) {
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
     const authStatus = localStorage.getItem('isAuthenticated');
     setIsAuthenticated(authStatus === 'true');
+    setAuthLoading(false);
   }, []);
+
+  if (authLoading) {
+    return null;
+  }
 
   return (
     <Router>
@@ -236,6 +243,14 @@ function App() {
           element={
             <ProtectedRoute isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated}>
               <Admins />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/kurs"
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated}>
+              <Kurs />
             </ProtectedRoute>
           }
         />
