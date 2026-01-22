@@ -18,7 +18,7 @@ function Support() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter] = useState('all');
   const [showInfoPanel, setShowInfoPanel] = useState(true);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showCloseModal, setShowCloseModal] = useState(false);
@@ -33,6 +33,7 @@ function Support() {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const prevMessageCountRef = useRef(0);
+  // eslint-disable-next-line no-unused-vars
   const [stats, setStats] = useState({ total: 0, open: 0, pending: 0, unread: 0 });
 
   // Load current user from localStorage
@@ -320,12 +321,6 @@ function Support() {
     return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
   };
 
-  const formatFullDate = (dateString) => {
-    if (!dateString) return '';
-    return new Date(dateString).toLocaleString('ru-RU', {
-      day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
-  };
 
   const groupMessagesByDate = useCallback((msgs) => {
     const groups = [];

@@ -87,15 +87,6 @@ function Clients() {
     return deliveries.filter(d => d.receiver_username === username).length;
   };
 
-  const getTabCount = (tabId) => {
-    switch (tabId) {
-      case 'all': return clients.length;
-      case 'active': return clients.filter(c => c.is_active).length;
-      case 'inactive': return clients.filter(c => !c.is_active).length;
-      case 'companies': return clients.filter(c => c.company_name).length;
-      default: return 0;
-    }
-  };
 
   const filteredClients = clients
     .filter(client => {

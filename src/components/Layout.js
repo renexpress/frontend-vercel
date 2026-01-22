@@ -229,27 +229,6 @@ function Layout({ children, setIsAuthenticated }) {
     </div>
   );
 
-  const SectionLabel = ({ label }) => (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 3,
-        padding: '16px 10px 6px',
-        fontSize: 12,
-        color: PRIMARY,
-        fontWeight: 400,
-        cursor: 'pointer',
-        opacity: 0.7,
-      }}
-    >
-      <span>{label}</span>
-      <svg width="8" height="8" viewBox="0 0 8 8">
-        <path d="M2 1l4 3-4 3" fill="none" stroke={PRIMARY} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
-    </div>
-  );
-
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(to right, #2AABAB, #2AABAB, #0a2535)', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       {/* Header */}
