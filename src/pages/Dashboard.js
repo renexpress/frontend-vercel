@@ -12,6 +12,10 @@ function Dashboard() {
   });
   const [hoveredBtn, setHoveredBtn] = useState(null);
 
+  // Check if current user is main admin
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isMainAdmin = user.is_main_admin === true;
+
   useEffect(() => {
     fetchStats();
   }, []);
@@ -60,7 +64,7 @@ function Dashboard() {
     },
   ];
 
-  const resourceCards = [
+  const allResourceCards = [
     {
       id: 'support',
       title: 'Поддержка',
@@ -74,8 +78,12 @@ function Dashboard() {
       desc: 'Управление доступом и ролями администраторов',
       btn: 'Управление',
       path: '/admins',
+      mainAdminOnly: true,
     },
   ];
+
+  // Filter cards based on admin access
+  const resourceCards = allResourceCards.filter(card => !card.mainAdminOnly || isMainAdmin);
 
   return (
     <div style={styles.container}>
