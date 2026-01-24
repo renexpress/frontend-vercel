@@ -43,17 +43,17 @@ function Kurs() {
         <div style={styles.ratesRow}>
           <div style={styles.rateItem}>
             <span style={styles.rateLabel}>Курс ЦБ</span>
-            <span style={styles.rateValue}>{cbRate.cb_rate.toFixed(2)} ₽</span>
+            <span style={styles.rateValue}>{cbRate.cb_rate.toFixed(4)} ₽</span>
           </div>
           <div style={styles.rateDivider}>+5₽</div>
           <div style={styles.rateItem}>
             <span style={styles.rateLabel}>Наш курс</span>
-            <span style={styles.rateValue}>{cbRate.our_rate.toFixed(2)} ₽</span>
+            <span style={styles.rateValue}>{cbRate.our_rate.toFixed(4)} ₽</span>
           </div>
           <div style={styles.rateDivider}>×1.07</div>
           <div style={styles.rateItem}>
             <span style={styles.rateLabel}>Курс для оплаты</span>
-            <span style={styles.rateValueMain}>{cbRate.payment_rate.toFixed(2)} ₽</span>
+            <span style={styles.rateValueMain}>{cbRate.payment_rate.toFixed(4)} ₽</span>
           </div>
         </div>
       </div>
@@ -65,7 +65,7 @@ function Kurs() {
           <span style={styles.formulaText}>Итого = Сумма USD × (Курс ЦБ + 5₽) × 1.07</span>
           <div style={styles.exampleRow}>
             <span style={styles.exampleLabel}>Пример:</span>
-            <span style={styles.exampleText}>$100 × {cbRate.our_rate.toFixed(2)} × 1.07 = <strong>{Math.ceil(100 * cbRate.our_rate * 1.07)} ₽</strong></span>
+            <span style={styles.exampleText}>$100 × {cbRate.our_rate.toFixed(4)} × 1.07 = <strong>{Math.ceil(100 * cbRate.our_rate * 1.07)} ₽</strong></span>
           </div>
         </div>
       </div>
