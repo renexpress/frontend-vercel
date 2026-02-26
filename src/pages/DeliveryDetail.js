@@ -160,15 +160,14 @@ function DeliveryDetail() {
     setSaving(true);
     try {
       // Build place_number with embedded data (format: "A1:5.5:0.02:BC001, A2:3.2:0.03:BC002")
+      // Note: Replace commas with periods in numeric values to avoid parsing issues
       const validPlaces = places.filter(p => p.number.trim() !== '');
       const placeNumberStr = validPlaces.map(p => {
-        const parts = [p.number];
-        // Add weight (or empty)
-        parts.push(p.weight || '');
-        // Add volume (or empty)
-        parts.push(p.volume || '');
-        // Add barcode (or empty)
-        parts.push(p.barcode || '');
+        const num = (p.number || '').replace(/,/g, '');  // Remove commas from place number
+        const weight = (p.weight || '').replace(/,/g, '.');  // Convert comma to period for decimals
+        const volume = (p.volume || '').replace(/,/g, '.');  // Convert comma to period for decimals
+        const barcode = (p.barcode || '').replace(/,/g, '');  // Remove commas from barcode
+        const parts = [num, weight, volume, barcode];
         // Remove trailing empty parts
         while (parts.length > 1 && parts[parts.length - 1] === '') {
           parts.pop();

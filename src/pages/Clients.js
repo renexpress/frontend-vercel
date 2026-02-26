@@ -18,6 +18,67 @@ function Clients() {
   const [showSearch, setShowSearch] = useState(false);
   const sortRef = useRef(null);
 
+  // Add client modal state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addForm, setAddForm] = useState({ renCode: '', full_name: '', phone: '' });
+  const [addError, setAddError] = useState('');
+  const [addLoading, setAddLoading] = useState(false);
+  const [addSuccess, setAddSuccess] = useState('');
+
+  const handleAddClient = async () => {
+    setAddError('');
+    setAddSuccess('');
+
+    if (!addForm.renCode.trim()) {
+      setAddError('Введите код REN');
+      return;
+    }
+    if (!addForm.full_name.trim()) {
+      setAddError('Введите имя клиента');
+      return;
+    }
+    if (!addForm.phone.trim()) {
+      setAddError('Введите номер телефона');
+      return;
+    }
+
+    const username = addForm.renCode.trim().toUpperCase().startsWith('REN')
+      ? addForm.renCode.trim().toUpperCase()
+      : 'REN' + addForm.renCode.trim();
+
+    // Check if this REN code already exists
+    const exists = clients.find(c => c.username === username);
+    if (exists) {
+      setAddError(`Клиент ${username} уже существует`);
+      return;
+    }
+
+    setAddLoading(true);
+    try {
+      const res = await axios.post(`${API_URL}/clients/`, {
+        full_name: addForm.full_name.trim(),
+        phone: addForm.phone.trim(),
+      });
+      const newClient = res.data;
+      const createdUsername = newClient.username || `REN${newClient.id}`;
+      setAddSuccess(`Клиент создан: ${createdUsername} | Логин: ${createdUsername} | Пароль: ${addForm.phone.trim()}`);
+      setAddForm({ renCode: '', full_name: '', phone: '' });
+      fetchData();
+      setTimeout(() => {
+        setShowAddModal(false);
+        setAddSuccess('');
+      }, 2000);
+    } catch (error) {
+      if (error.response?.data?.phone) {
+        setAddError('Клиент с таким телефоном уже существует');
+      } else {
+        setAddError('Ошибка при создании клиента');
+      }
+    } finally {
+      setAddLoading(false);
+    }
+  };
+
   const tabs = [
     { id: 'all', label: 'Все' },
     { id: 'active', label: 'Активные' },
@@ -39,6 +100,17 @@ function Clients() {
   }, []);
 
   useEffect(() => {
+    if (!searchTerm) {
+      fetchData();
+      return;
+    }
+    const timer = setTimeout(() => {
+      fetchData(searchTerm);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (sortRef.current && !sortRef.current.contains(event.target)) {
         setShowSort(false);
@@ -48,10 +120,11 @@ function Clients() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = async (search = '') => {
     try {
+      const params = search ? `?search=${encodeURIComponent(search)}` : '';
       const [clientsRes, deliveriesRes] = await Promise.all([
-        axios.get(`${API_URL}/clients/`),
+        axios.get(`${API_URL}/clients/${params}`),
         axios.get(`${API_URL}/deliveries/`)
       ]);
 
@@ -142,6 +215,14 @@ function Clients() {
           </svg>
           <h1 style={styles.title}>Клиенты</h1>
         </div>
+        <button
+          style={styles.addButton}
+          onClick={() => { setShowAddModal(true); setAddError(''); setAddSuccess(''); setAddForm({ renCode: '', full_name: '', phone: '' }); }}
+          onMouseEnter={e => { e.target.style.transform = 'translateY(-1px)'; e.target.style.boxShadow = '0 4px 12px rgba(42,171,171,0.4)'; }}
+          onMouseLeave={e => { e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = '0 2px 8px rgba(42,171,171,0.3)'; }}
+        >
+          + Добавить
+        </button>
       </div>
 
       {/* Card container */}
@@ -341,6 +422,68 @@ function Clients() {
           </div>
         )}
       </div>
+
+      {/* Add Client Modal */}
+      {showAddModal && (
+        <div style={styles.modalOverlay} onClick={() => setShowAddModal(false)}>
+          <div style={styles.modal} onClick={e => e.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <h3 style={styles.modalTitle}>Новый клиент</h3>
+              <button style={styles.modalClose} onClick={() => setShowAddModal(false)}>&times;</button>
+            </div>
+
+            <div style={styles.modalBody}>
+              <div style={styles.formGroup}>
+                <label style={styles.formLabel}>Код (логин)</label>
+                <div style={styles.renInputRow}>
+                  <span style={styles.renPrefix}>REN</span>
+                  <input
+                    style={styles.renInput}
+                    placeholder="34"
+                    value={addForm.renCode}
+                    onChange={e => setAddForm({ ...addForm, renCode: e.target.value.replace(/\D/g, '') })}
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.formLabel}>Имя клиента</label>
+                <input
+                  style={styles.formInput}
+                  placeholder="Иван Иванов"
+                  value={addForm.full_name}
+                  onChange={e => setAddForm({ ...addForm, full_name: e.target.value })}
+                />
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.formLabel}>Номер телефона (пароль для входа)</label>
+                <input
+                  style={styles.formInput}
+                  placeholder="+7 (999) 123-45-67"
+                  value={addForm.phone}
+                  onChange={e => setAddForm({ ...addForm, phone: e.target.value })}
+                />
+              </div>
+
+              {addError && <div style={styles.formError}>{addError}</div>}
+              {addSuccess && <div style={styles.formSuccess}>{addSuccess}</div>}
+            </div>
+
+            <div style={styles.modalFooter}>
+              <button style={styles.cancelBtn} onClick={() => setShowAddModal(false)}>Отмена</button>
+              <button
+                style={styles.submitBtn}
+                onClick={handleAddClient}
+                disabled={addLoading}
+              >
+                {addLoading ? 'Создание...' : 'Создать'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -647,6 +790,154 @@ const styles = {
     fontSize: '13px',
     color: '#6d7175',
     margin: 0,
+  },
+
+  // Add button
+  addButton: {
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    color: '#fff',
+    border: 'none',
+    padding: '8px 20px',
+    borderRadius: '10px',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    boxShadow: '0 2px 8px rgba(42,171,171,0.3)',
+    transition: 'all 0.2s ease',
+  },
+
+  // Modal
+  modalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modal: {
+    backgroundColor: '#fff',
+    borderRadius: '16px',
+    width: '420px',
+    maxWidth: '90vw',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '20px 24px 0',
+  },
+  modalTitle: {
+    margin: 0,
+    fontSize: '18px',
+    fontWeight: '600',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text',
+  },
+  modalClose: {
+    background: 'none',
+    border: 'none',
+    fontSize: '24px',
+    color: '#999',
+    cursor: 'pointer',
+    padding: '0 4px',
+    lineHeight: 1,
+  },
+  modalBody: {
+    padding: '20px 24px',
+  },
+  formGroup: {
+    marginBottom: '16px',
+  },
+  formLabel: {
+    display: 'block',
+    fontSize: '13px',
+    fontWeight: '500',
+    color: '#6d7175',
+    marginBottom: '6px',
+  },
+  renInputRow: {
+    display: 'flex',
+    alignItems: 'center',
+    border: '1px solid #e1e3e5',
+    borderRadius: '10px',
+    overflow: 'hidden',
+  },
+  renPrefix: {
+    padding: '10px 12px',
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: '14px',
+    userSelect: 'none',
+  },
+  renInput: {
+    flex: 1,
+    padding: '10px 14px',
+    border: 'none',
+    fontSize: '14px',
+    outline: 'none',
+    fontWeight: '600',
+  },
+  formInput: {
+    width: '100%',
+    padding: '10px 14px',
+    border: '1px solid #e1e3e5',
+    borderRadius: '10px',
+    fontSize: '14px',
+    outline: 'none',
+    transition: 'border-color 0.2s',
+    boxSizing: 'border-box',
+  },
+  formError: {
+    color: '#d72c0d',
+    fontSize: '13px',
+    marginTop: '4px',
+    padding: '8px 12px',
+    backgroundColor: '#fef2f2',
+    borderRadius: '8px',
+  },
+  formSuccess: {
+    color: '#0d7a3e',
+    fontSize: '13px',
+    marginTop: '4px',
+    padding: '8px 12px',
+    backgroundColor: '#f0fdf4',
+    borderRadius: '8px',
+  },
+  modalFooter: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: '10px',
+    padding: '0 24px 20px',
+  },
+  cancelBtn: {
+    background: '#fff',
+    border: '1px solid #e1e3e5',
+    padding: '8px 20px',
+    borderRadius: '10px',
+    fontSize: '14px',
+    color: '#6d7175',
+    cursor: 'pointer',
+  },
+  submitBtn: {
+    background: 'linear-gradient(to right, #2AABAB, #0a2535)',
+    color: '#fff',
+    border: 'none',
+    padding: '8px 24px',
+    borderRadius: '10px',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    boxShadow: '0 2px 8px rgba(42,171,171,0.3)',
   },
 };
 

@@ -1390,7 +1390,7 @@ function AddProduct() {
                     backgroundColor: hoveredField === 'retailPrice' && focusedField !== 'retailPrice' ? '#fafbfc' : '#fff',
                   }}
                 />
-                <span style={styles.priceCurrency}>₽</span>
+                <span style={styles.priceCurrency}>$</span>
               </div>
             </div>
 
@@ -1468,7 +1468,7 @@ function AddProduct() {
                         backgroundColor: hoveredField === 'wholesalePrice' && focusedField !== 'wholesalePrice' ? '#fafbfc' : '#fff',
                       }}
                     />
-                    <span style={styles.priceCurrency}>₽</span>
+                    <span style={styles.priceCurrency}>$</span>
                   </div>
                 </div>
               )}
@@ -1509,7 +1509,7 @@ function AddProduct() {
                         backgroundColor: hoveredField === 'discountPrice' && focusedField !== 'discountPrice' ? '#fafbfc' : '#fff',
                       }}
                     />
-                    <span style={styles.priceCurrency}>₽</span>
+                    <span style={styles.priceCurrency}>$</span>
                   </div>
                 </div>
               )}

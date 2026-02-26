@@ -1836,7 +1836,7 @@ function ProductDetail() {
                   disabled={!isEditMode}
                   style={{...styles.priceInput, backgroundColor: !isEditMode ? '#f6f6f7' : '#fff'}}
                 />
-                <span style={styles.priceCurrency}>₽</span>
+                <span style={styles.priceCurrency}>$</span>
               </div>
             </div>
 
@@ -1904,7 +1904,7 @@ function ProductDetail() {
                       disabled={!isEditMode}
                       style={{...styles.priceInput, backgroundColor: !isEditMode ? '#f6f6f7' : '#fff'}}
                     />
-                    <span style={styles.priceCurrency}>₽</span>
+                    <span style={styles.priceCurrency}>$</span>
                   </div>
                 </div>
               )}
@@ -1939,7 +1939,7 @@ function ProductDetail() {
                       disabled={!isEditMode}
                       style={{...styles.priceInput, backgroundColor: !isEditMode ? '#f6f6f7' : '#fff'}}
                     />
-                    <span style={styles.priceCurrency}>₽</span>
+                    <span style={styles.priceCurrency}>$</span>
                   </div>
                 </div>
               )}
