@@ -108,6 +108,11 @@ function Layout({ children, setIsAuthenticated }) {
         <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
       </svg>
     ),
+    tnved: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill={c}>
+        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+      </svg>
+    ),
     admins: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill={c}>
         <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
@@ -123,6 +128,7 @@ function Layout({ children, setIsAuthenticated }) {
   const items = [
     { id: 'home', path: '/', label: 'Главная', icon: 'home' },
     { id: 'deliveries', path: '/deliveries', label: 'Доставки', icon: 'deliveries' },
+    { id: 'tnved', path: '/tnved', label: 'ТНВЭД', icon: 'tnved' },
     { id: 'kurs', path: '/kurs', label: 'Курс', icon: 'kurs' },
     { id: 'customers', path: '/clients', label: 'Клиенты', icon: 'customers' },
     ...(isMainAdmin ? [{ id: 'admins', path: '/admins', label: 'Администраторы', icon: 'admins' }] : []),

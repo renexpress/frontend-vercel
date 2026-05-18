@@ -27,6 +27,7 @@ import Content from './pages/Content';
 import Markets from './pages/Markets';
 import Deliveries from './pages/Deliveries';
 import DeliveryDetail from './pages/DeliveryDetail';
+import Tnved from './pages/Tnved';
 import Admins from './pages/Admins';
 import Kurs from './pages/Kurs';
 import Layout from './components/Layout';
@@ -291,6 +292,14 @@ function App() {
           element={
             <ProtectedRoute isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated}>
               <Deliveries />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tnved"
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated}>
+              <Tnved />
             </ProtectedRoute>
           }
         />
